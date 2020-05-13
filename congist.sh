@@ -115,7 +115,6 @@ do_push() {
 }
 
 exec() {
-    pwd
     if [ "$dry_run" = true ]; then
         echo dry run: $*
     else
