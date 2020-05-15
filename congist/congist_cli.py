@@ -30,7 +30,7 @@ def download(congist, args):
         if args.verbose:
             print("Downloading gists for " + user)
         for gist in congist.get_gists(user):
-            congist.download_gist(gist, args.dry_run)
+            congist.download_gist(gist, args.ssh, args.dry_run)
 
 def upload(congist, args):
     for user in congist.list_users():
@@ -56,6 +56,8 @@ def main(argv=None):
                        help='change local base directory')
     parser.add_argument('-H', '--host',
                        help='specify host')
+    parser.add_argument('-S', '--ssh', action='store_true',
+                       help='use SSH instead HTTPS')
     parser.add_argument('-U', '--user',
                        help='specify user')
     parser.add_argument('-v', '--verbose', action='store_true',

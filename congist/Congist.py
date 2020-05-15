@@ -52,16 +52,20 @@ class Congist:
         github_user = self._githubs[user].get_user()
         return [Gist(gist) for gist in github_user.get_gists()]
 
-    def download_gist(self, gist, dry_run=False):
+    def download_gist(self, gist, ssh, dry_run=False):
         local_parent = self._get_local_parent(gist)
         local_dir = local_parent + "/" + gist.id
+
         if os.path.isdir(local_dir):
             self._pull_gist(local_dir, dry_run)
         else:
-            self._clone_gist(local_parent, gist, dry_run)
+            self._clone_gist(local_parent, gist, ssh, dry_run)
 
-    def _clone_gist(self, local_parent, gist, dry_run):
-        gist_url = "git@" + gist.pull_url.replace('/', ':')[8:-4]
+    def _clone_gist(self, local_parent, gist, ssh, dry_run):
+        if ssh:
+            gist_url = "git@" + gist.pull_url.replace('/', ':')[8:]
+        else:
+            gist_url = gist.pull_url
         cmd = "cd {}; git clone {}".format(local_parent, gist_url)
         if dry_run:
             print(cmd)
