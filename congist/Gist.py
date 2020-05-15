@@ -10,15 +10,27 @@ class Gist:
         self._gist = gist
 
     def __repr__(self):
-        return 'user={user}; id={id}; description={description}; public={public}; starred={starred}'.format(
-            user=self.user, id=self.id, description=self.description,
+        return 'user={user}; url={url}; description={description}; public={public}'.format(
+            user=self.user, url=self.api_url, description=self.description,
             public=self.public)
 
     def __str__(self):
         public = 'public' if self.public else 'secret'
         return '{url} {description} ({public})'.format(
-            url=self.html_url, description=self.description, public=public)
- 
+            url=self.api_url, description=self.description, public=public)
+
+    def get_info(self):
+        return {
+            "id": self.id,
+            "description": self.description,
+            "public": self.public,
+            "starred": self.starred,
+            "created": self.created,
+            "updated": self.updated,
+            "url": self.api_url,
+            "files": { k : v.raw_url for k, v in self.files.items() }
+        }
+
     @property
     def user(self):
         return self._gist.owner.login
@@ -36,7 +48,7 @@ class Gist:
         return self._gist.public
  
     @property
-    def url(self):
+    def api_url(self):
         return self._gist.url
  
     @property

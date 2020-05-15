@@ -22,6 +22,16 @@ def list(congist, args):
         for gist in congist.get_gists(user):
             print(gist)
 
+def index(congist, args):
+    for user in congist.list_users():
+        if args.user is not None and args.user != user:
+            continue
+
+        if args.verbose:
+            print("Indexing gists for " + user)
+        for gist in congist.get_gists(user):
+            print(gist.get_info())
+
 def download(congist, args):
     for user in congist.list_users():
         if args.user is not None and args.user != user:
@@ -48,6 +58,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Construct your gists')
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
+    parser.add_argument('-i', '--index', action='store_true',
+                       help='create index of gists')
     parser.add_argument('-d', '--download', action='store_true',
                        help='download gists')
     parser.add_argument('-u', '--upload', action='store_true',
@@ -73,6 +85,8 @@ def main(argv=None):
         congist = Congist(config)
         if args.list:
             list(congist, args)
+        elif args.index:
+            index(congist, args)
         elif args.download:
             download(congist, args)
         elif args.upload:
