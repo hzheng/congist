@@ -11,23 +11,30 @@ from github import Github
 from congist.Gist import Gist
 
 class Congist:
+    LOCAL_BASE = 'local_base'
+    REPOS = 'repos'
+    USERNAME = 'username'
+    USERS = 'users'
+    ACCESS_TOKEN = 'access_token'
+    GITHUB = 'github'
+
     def __init__(self, config):
         self._githubs = {}
-        local_base = config['local_base']
+        local_base = config[self.LOCAL_BASE]
         if local_base[0] == '$':
             local_base = os.getenv(local_base[1:], os.getcwd())
         self._local_base = local_base
         self._local_dirs = {}
-        repos = config['repos']
+        repos = config[self.REPOS]
         self._hosts = repos.keys()
         for host, settings in repos.items():
-            if host == 'github':
-                for user in settings['users']:
-                    username = user['username']
+            if host == self.GITHUB:
+                for user in settings[self.USERS]:
+                    username = user[self.USERNAME]
                     user_local_base = self.get_local_host_base(host) + "/" + username
                     os.makedirs(user_local_base, exist_ok=True)
                     self._local_dirs[host + "/" + username] = user_local_base
-                    self._githubs[username] = Github(user['access_token'])
+                    self._githubs[username] = Github(user[self.ACCESS_TOKEN])
             else: # currently only support GitHub
                 pass
 
@@ -87,7 +94,7 @@ class Congist:
             os.system(cmd)
 
     def _get_local_parent(self, gist):
-        return self.get_local_dir("github/" + gist.user)
+        return self.get_local_dir(self.GITHUB + "/" + gist.user)
 
     def upload_gist(self, hosts=None, user=None, dry_run=False):
         if hosts is None:

@@ -53,10 +53,7 @@ def upload(congist, args):
             print("Uploading gists for " + user)
         congist.upload_gist(args.host, user, args.dry_run)
 
-def main(argv=None):
-    config_path = expanduser("~/.congist")
-    # TODO: if config_path not exist, prompt and create a template
-
+def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
@@ -80,12 +77,16 @@ def main(argv=None):
                        help='verbose output')
     parser.add_argument('-n', '--dry-run', action='store_true',
                        help='dry run')
-    args = parser.parse_args()
+    return parser.parse_args()
 
+def main(argv=None):
+    args = parse_args()
+    config_path = expanduser("~/.congist")
+    # TODO: if config_path not exist, prompt and create a template
     with open(config_path) as config_json:
         config = json.load(config_json)
         if args.local_base:
-            config['local_base'] = args.local_base
+            config[Congist.LOCAL_BASE] = args.local_base
         congist = Congist(config)
         if args.list:
             list(congist, args)
