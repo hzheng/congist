@@ -96,13 +96,16 @@ class Congist:
     def _get_local_parent(self, gist):
         return self.get_local_dir(self.GITHUB + "/" + gist.user)
 
-    def upload_gist(self, hosts=None, user=None, dry_run=False):
+    def upload_gist(self, hosts=None, user=None, verbose=False, dry_run=False):
         if hosts is None:
             hosts = self.hosts
         for host in hosts:
-            self._upload_gist(host, user, dry_run)
+            self._upload_gist(host, user, verbose, dry_run)
 
-    def _upload_gist(self, host, user, dry_run):
+    GIT_COMMENT = 'commit via congist' #TODO customizable
+    GIT_PUSH = 'git add -A && (git diff --cached --exit-code >/dev/null || (git commit -m "{comment}" {verbose} && git push {verbose}))'
+
+    def _upload_gist(self, host, user, verbose, dry_run):
         local_dir = self.get_local_host_base(host)
         if user:
             local_dir += "/" + user
@@ -110,13 +113,12 @@ class Congist:
         if not os.path.isdir(local_dir):
             return
 
-        comment = 'commit via congist' #TODO customize commit message
         for subdir in os.listdir(local_dir):
             subdir = local_dir + "/" + subdir
             if not os.path.isdir(subdir):
                 continue
-            cmd = 'cd {} && git add -A && git commit -m "{}" && git push'.format(
-                subdir, comment)
+            cmd = ('cd {subdir} &&' + self.GIT_PUSH).format(
+                subdir=subdir, comment=self.GIT_COMMENT, verbose="" if verbose else "-q")
             if dry_run:
                 print(cmd)
             else:

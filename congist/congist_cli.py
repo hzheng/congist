@@ -35,7 +35,7 @@ def index(congist, args):
         print(json_output)
 
 def download(congist, args):
-    for user in congist.list_users():
+    for user in congist.users:
         if args.user is not None and args.user != user:
             continue
 
@@ -45,13 +45,14 @@ def download(congist, args):
             congist.download_gist(gist, args.ssh, args.dry_run)
 
 def upload(congist, args):
-    for user in congist.list_users():
+    for user in congist.users:
         if args.user is not None and args.user != user:
             continue
 
         if args.verbose:
             print("Uploading gists for " + user)
-        congist.upload_gist(args.host, user, args.dry_run)
+        congist.upload_gist(
+            args.host, user, verbose=args.verbose, dry_run=args.dry_run)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
