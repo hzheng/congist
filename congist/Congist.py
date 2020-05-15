@@ -45,12 +45,19 @@ class Congist:
     def get_local_dir(self, user):
         return self._local_dirs[user]
 
-    def list_users(self):
+    @property
+    def users(self):
         return self._githubs.keys()
 
     def get_gists(self, user):
         github_user = self._githubs[user].get_user()
         return [Gist(gist) for gist in github_user.get_gists()]
+
+    def get_user_index(self, user):
+        return [gist.get_info() for gist in self.get_gists(user)]
+
+    def get_index(self):
+        return { u: self.get_user_index(u) for u in self.users}
 
     def download_gist(self, gist, ssh, dry_run=False):
         local_parent = self._get_local_parent(gist)

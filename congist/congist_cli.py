@@ -13,7 +13,7 @@ import json
 from congist.Congist import Congist
 
 def list(congist, args):
-    for user in congist.list_users():
+    for user in congist.users:
         if args.user is not None and args.user != user:
             continue
 
@@ -23,14 +23,16 @@ def list(congist, args):
             print(gist)
 
 def index(congist, args):
-    for user in congist.list_users():
-        if args.user is not None and args.user != user:
-            continue
-
-        if args.verbose:
-            print("Indexing gists for " + user)
-        for gist in congist.get_gists(user):
-            print(gist.get_info())
+    if args.user is None:
+        index = congist.get_index()
+    else:
+        index = congist.get_user_index(args.user)
+    json_output = json.dumps(index, indent=4)
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(json_output)
+    else:
+        print(json_output)
 
 def download(congist, args):
     for user in congist.list_users():
@@ -59,7 +61,9 @@ def main(argv=None):
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
     parser.add_argument('-i', '--index', action='store_true',
-                       help='create index of gists')
+                       help='print index of gists')
+    parser.add_argument('-o', '--output',
+                       help='specify output file')
     parser.add_argument('-d', '--download', action='store_true',
                        help='download gists')
     parser.add_argument('-u', '--upload', action='store_true',
