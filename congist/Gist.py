@@ -28,7 +28,7 @@ class Gist:
             "created": self.created,
             "updated": self.updated,
             "url": self.api_url,
-            "files": { k : v.raw_url for k, v in self.files.items() }
+            "files": { name : file.raw_url for name, file in self.files.items() }
         }
 
     @property
@@ -78,10 +78,6 @@ class Gist:
     @property
     def updated(self):
         return self._gist.updated_at.isoformat()
-
-    @property
-    def files(self):
-        return self._gist.files
 
     @property
     def starred(self):

@@ -34,6 +34,15 @@ def index(congist, args):
     else:
         print(json_output)
 
+def read(congist, args):
+    output = sys.stdout
+    if args.output:
+        output = open(args.output, "w")
+    for filename, content in congist.read_file(**vars(args)):
+        if args.verbose:
+            print("====={}======".format(filename))
+        print(content, file=output)
+
 def download(congist, args):
     for user in congist.users:
         if args.user is not None and args.user != user:
@@ -63,6 +72,10 @@ def parse_args():
                        help='specify output file')
     parser.add_argument('-d', '--download', action='store_true',
                        help='download gists')
+    parser.add_argument('-r', '--read', action='store_true',
+                       help='read gists')
+    parser.add_argument('-f', '--file-type',
+                       help='specify the file extensions(comma separated)')
     parser.add_argument('-u', '--upload', action='store_true',
                        help='upload gists')
     parser.add_argument('-C', '--local-base',
@@ -92,6 +105,8 @@ def main(argv=None):
             list(congist, args)
         elif args.index:
             index(congist, args)
+        elif args.read:
+            read(congist, args)
         elif args.download:
             download(congist, args)
         elif args.upload:

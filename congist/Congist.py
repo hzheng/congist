@@ -5,6 +5,7 @@ Congist is the core worker.
 """
 
 import os
+import re
 
 from github import Github
 
@@ -17,6 +18,8 @@ class Congist:
     USERS = 'users'
     ACCESS_TOKEN = 'access_token'
     GITHUB = 'github'
+    FILE_TYPE = 'file_type'
+    TEXT = 'text'
 
     def __init__(self, config):
         self._githubs = {}
@@ -37,6 +40,8 @@ class Congist:
                     self._githubs[username] = Github(user[self.ACCESS_TOKEN])
             else: # currently only support GitHub
                 pass
+        file_type = config[self.FILE_TYPE]
+        self._text_pattern = re.compile(file_type[self.TEXT])
 
     @property
     def hosts(self):
@@ -65,6 +70,29 @@ class Congist:
 
     def get_index(self):
         return { u: self.get_user_index(u) for u in self.users}
+
+    def read_file(self, **args):
+        user = args['user']
+        users = self.users if user is None else [user]
+        for user in users:
+            for _ in self.read_user_file(user, **args):
+                yield _
+
+    def read_user_file(self, user_, **args):
+        for gist in self.get_gists(user_):
+            for name, file in gist.files.items():
+                if self._match(name.lower(), **args):
+                    yield name, file.content
+
+    def _match(self, filename, **args):
+        file_type = args[self.FILE_TYPE]
+        if file_type:
+            extensions = tuple(file_type.split(','))
+            if not filename.endswith(extensions):
+                return False
+        elif not self._text_pattern.match(filename):
+            return False
+        return True
 
     def download_gist(self, gist, **args):
         local_parent = self._get_local_parent(gist)
