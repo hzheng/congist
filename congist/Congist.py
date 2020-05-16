@@ -19,11 +19,15 @@ class Congist:
     ACCESS_TOKEN = 'access_token'
     GITHUB = 'github'
     FILE_TYPE = 'file_type'
+    FILE_EXT = 'file_extension'
     TEXT = 'text'
+    COMMIT = 'commit'
+    COMMAND = 'command'
+    MESSAGE = 'message'
 
     def __init__(self, config):
         self._githubs = {}
-        local_base = config[self.LOCAL_BASE]
+        local_base = os.path.expanduser(config[self.LOCAL_BASE])
         if local_base[0] == '$':
             local_base = os.getenv(local_base[1:], os.getcwd())
         self._local_base = local_base
@@ -42,6 +46,9 @@ class Congist:
                 pass
         file_type = config[self.FILE_TYPE]
         self._text_pattern = re.compile(file_type[self.TEXT])
+        commit = config[self.COMMIT]
+        self._commit_command = commit[self.COMMAND]
+        self._commit_message = commit[self.MESSAGE]
 
     @property
     def hosts(self):
@@ -85,9 +92,9 @@ class Congist:
                     yield name, file.content
 
     def _match(self, filename, **args):
-        file_type = args[self.FILE_TYPE]
-        if file_type:
-            extensions = tuple(file_type.split(','))
+        file_ext = args[self.FILE_EXT]
+        if file_ext:
+            extensions = tuple(file_ext.split(','))
             if not filename.endswith(extensions):
                 return False
         elif not self._text_pattern.match(filename):
@@ -131,9 +138,6 @@ class Congist:
         for host in hosts:
             self._upload_gist(host, user_, **args)
 
-    GIT_COMMENT = 'commit via congist' #TODO customizable
-    GIT_PUSH = 'git add -A && (git diff --cached --exit-code >/dev/null || (git commit -m "{comment}" {verbose} && git push {verbose}))'
-
     def _upload_gist(self, host_, user_, **args):
         local_dir = self.get_local_host_base(host_)
         if user_:
@@ -145,8 +149,8 @@ class Congist:
             subdir = local_dir + "/" + subdir
             if not os.path.isdir(subdir):
                 continue
-            cmd = ('cd {subdir} &&' + self.GIT_PUSH).format(
-                subdir=subdir, comment=self.GIT_COMMENT,
+            cmd = ('cd {subdir} &&' + self._commit_command).format(
+                subdir=subdir, comment=self._commit_message,
                 verbose=("" if args['verbose'] else "-q"))
             if args['dry_run']:
                 print(cmd)

@@ -1,0 +1,12 @@
+repos:
+    github:
+        site: https://github.com
+        users:
+            - username: your_github_login1
+              access_token: your_access_token1
+            - username: your_github_login2
+              access_token: your_access_token2
+    gitlab:
+        site: https://gitlab.com/
+        users:
+            - username: your_gitlab_login

@@ -5,8 +5,9 @@
 Command-line client for Congist.
 """
 
-from os.path import expanduser
+from os.path import expanduser, dirname, abspath, join
 import sys
+import yaml
 import argparse
 import json
 
@@ -18,7 +19,7 @@ def list(congist, args):
             continue
 
         if args.verbose:
-            print("Listing gists for " + user)
+            print("Listing gists for", user)
         for gist in congist.get_gists(user):
             print(gist)
 
@@ -49,7 +50,7 @@ def download(congist, args):
             continue
 
         if args.verbose:
-            print("Downloading gists for " + user)
+            print("Downloading gists for", user)
         for gist in congist.get_gists(user):
             congist.download_gist(gist, **vars(args))
 
@@ -59,7 +60,7 @@ def upload(congist, args):
             continue
 
         if args.verbose:
-            print("Uploading gists for " + user)
+            print("Uploading gists for", user)
         congist.upload_gist(user, **vars(args))
 
 def parse_args():
@@ -72,10 +73,10 @@ def parse_args():
                        help='specify output file')
     parser.add_argument('-d', '--download', action='store_true',
                        help='download gists')
+    parser.add_argument('-e', '--file-extension',
+                       help='specify the file extensions(comma separated)')
     parser.add_argument('-r', '--read', action='store_true',
                        help='read gists')
-    parser.add_argument('-f', '--file-type',
-                       help='specify the file extensions(comma separated)')
     parser.add_argument('-u', '--upload', action='store_true',
                        help='upload gists')
     parser.add_argument('-C', '--local-base',
@@ -94,25 +95,35 @@ def parse_args():
 
 def main(argv=None):
     args = parse_args()
-    config_path = expanduser("~/.congist")
-    # TODO: if config_path not exist, prompt and create a template
-    with open(config_path) as config_json:
-        config = json.load(config_json)
-        if args.local_base:
-            config[Congist.LOCAL_BASE] = args.local_base
-        congist = Congist(config)
-        if args.list:
-            list(congist, args)
-        elif args.index:
-            index(congist, args)
-        elif args.read:
-            read(congist, args)
-        elif args.download:
-            download(congist, args)
-        elif args.upload:
-            upload(congist, args)
-        else:
-            print("add gist from input") #TODO
+    # load system config
+    cfg_file = join(dirname(abspath(__file__)), "../congist.yml")
+    with open(cfg_file, "r") as sys_file:
+        sys_config = yaml.load(sys_file, yaml.SafeLoader)
+        user_config_path = expanduser(sys_config['user_cfg_path'])
+    
+        # load user config
+        # TODO: if user_config_path does not exist, prompt and create a template
+        with open(user_config_path, "r") as user_file:
+            # override order: sys config -> user config -> command args
+            user_config = yaml.load(user_file, yaml.SafeLoader)
+            config = {**sys_config, **user_config}
+            for key, value in vars(args).items():
+                if value is not None:
+                    config[key] = value
+
+            congist = Congist(config)
+            if args.list:
+                list(congist, args)
+            elif args.index:
+                index(congist, args)
+            elif args.read:
+                read(congist, args)
+            elif args.download:
+                download(congist, args)
+            elif args.upload:
+                upload(congist, args)
+            else:
+                print("add gist from input") #TODO
 
 
 if __name__ == '__main__':

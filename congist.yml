@@ -1,0 +1,11 @@
+user_cfg_path: ~/.congist
+
+local_base: $GIST_DATA
+
+file_type:
+    text: .+\.(bat|c|cfg|cpp|csharp|css|x?html|ini|java|jsp?|jsonc?|go|groovy|ini|md|php|pyi?|rb|sh|ts|txt|xml|xsl|yml)$
+
+commit:
+    command: git add -A && (git diff --cached --exit-code >/dev/null || (git commit -m "{comment}" {verbose} && git push {verbose}))
+
+    message: commit via congist
