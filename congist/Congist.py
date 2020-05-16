@@ -66,29 +66,30 @@ class Congist:
     def get_index(self):
         return { u: self.get_user_index(u) for u in self.users}
 
-    def download_gist(self, gist, ssh, dry_run=False):
+    def download_gist(self, gist, **args):
         local_parent = self._get_local_parent(gist)
         local_dir = local_parent + "/" + gist.id
 
         if os.path.isdir(local_dir):
-            self._pull_gist(local_dir, dry_run)
+            self._pull_gist(local_dir, **args)
         else:
-            self._clone_gist(local_parent, gist, ssh, dry_run)
+            self._clone_gist(local_parent, gist, **args)
 
-    def _clone_gist(self, local_parent, gist, ssh, dry_run):
-        if ssh:
+    def _clone_gist(self, local_parent, gist, **args):
+        if args['ssh']:
             gist_url = "git@" + gist.pull_url.replace('/', ':')[8:]
         else:
             gist_url = gist.pull_url
-        cmd = "cd {}; git clone {}".format(local_parent, gist_url)
-        if dry_run:
+        cmd = "cd {dir}; git clone {verbose} {url}".format(
+            dir=local_parent, verbose=("" if args['verbose'] else " -q"), url=gist_url)
+        if args['dry_run']:
             print(cmd)
         else:
             os.system(cmd)
 
-    def _pull_gist(self, local_dir, dry_run):
-        cmd = "cd {}; git pull".format(local_dir)
-        if dry_run:
+    def _pull_gist(self, local_dir, **args):
+        cmd = "cd {}; git pull{}".format(local_dir, "" if args['verbose'] else " -q")
+        if args['dry_run']:
             print(cmd)
         else:
             os.system(cmd)
@@ -96,20 +97,19 @@ class Congist:
     def _get_local_parent(self, gist):
         return self.get_local_dir(self.GITHUB + "/" + gist.user)
 
-    def upload_gist(self, hosts=None, user=None, verbose=False, dry_run=False):
-        if hosts is None:
-            hosts = self.hosts
+    def upload_gist(self, user_, **args):
+        host = args['host']
+        hosts = self.hosts if host is None else [host]
         for host in hosts:
-            self._upload_gist(host, user, verbose, dry_run)
+            self._upload_gist(host, user_, **args)
 
     GIT_COMMENT = 'commit via congist' #TODO customizable
     GIT_PUSH = 'git add -A && (git diff --cached --exit-code >/dev/null || (git commit -m "{comment}" {verbose} && git push {verbose}))'
 
-    def _upload_gist(self, host, user, verbose, dry_run):
-        local_dir = self.get_local_host_base(host)
-        if user:
-            local_dir += "/" + user
-        
+    def _upload_gist(self, host_, user_, **args):
+        local_dir = self.get_local_host_base(host_)
+        if user_:
+            local_dir += "/" + user_
         if not os.path.isdir(local_dir):
             return
 
@@ -118,8 +118,9 @@ class Congist:
             if not os.path.isdir(subdir):
                 continue
             cmd = ('cd {subdir} &&' + self.GIT_PUSH).format(
-                subdir=subdir, comment=self.GIT_COMMENT, verbose="" if verbose else "-q")
-            if dry_run:
+                subdir=subdir, comment=self.GIT_COMMENT,
+                verbose=("" if args['verbose'] else "-q"))
+            if args['dry_run']:
                 print(cmd)
             else:
                 os.system(cmd)

@@ -42,7 +42,7 @@ def download(congist, args):
         if args.verbose:
             print("Downloading gists for " + user)
         for gist in congist.get_gists(user):
-            congist.download_gist(gist, args.ssh, args.dry_run)
+            congist.download_gist(gist, **vars(args))
 
 def upload(congist, args):
     for user in congist.users:
@@ -51,8 +51,7 @@ def upload(congist, args):
 
         if args.verbose:
             print("Uploading gists for " + user)
-        congist.upload_gist(
-            args.host, user, verbose=args.verbose, dry_run=args.dry_run)
+        congist.upload_gist(user, **vars(args))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
