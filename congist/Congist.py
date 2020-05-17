@@ -6,10 +6,11 @@ Congist is the core worker.
 
 import re
 import os
+import sys
 
-from os.path import expanduser, isdir, join
+from os.path import basename, expanduser, isdir, join
 
-from github import Github
+from github import Github, InputFileContent
 
 from congist.Gist import Gist
 
@@ -24,10 +25,12 @@ class Congist:
     GITHUB = 'github'
     FILE_TYPE = 'file_type'
     FILE_NAME = 'file_name'
+    DEFAULT_FILENAME = 'default_filename'
     FILE_EXT = 'file_extension'
     TEXT = 'text'
     PUBLIC = 'public'
     DESC = 'description'
+    DEFAULT_DESC = 'default_description'
     COMMIT = 'commit'
     COMMAND = 'command'
     MESSAGE = 'message'
@@ -58,6 +61,8 @@ class Congist:
         self._commit_message = commit[self.MESSAGE]
         self._exact = config[self.EXACT]
         self._settings = config[self.REPOS]
+        self._default_description = config[self.DEFAULT_DESC]
+        self._default_filename = config[self.DEFAULT_FILENAME]
         if not self._settings:
             raise ConfigurationError(self.REPOS + " has empty setting")
         
@@ -69,7 +74,7 @@ class Congist:
                 for user in settings[self.USERS]:
                     username = user[self.USERNAME]
                     if host not in self._default_users:
-                        self._default_users[host] = user
+                        self._default_users[host] = username
                     user_local_base = self.get_local_host_base(host, username)
                     os.makedirs(user_local_base, exist_ok=True)
                     self.set_local_dir(host, username, user_local_base)
@@ -212,6 +217,36 @@ class Congist:
                 print(cmd)
             else:
                 os.system(cmd)
+
+    def create_gist(self, paths, **args):
+        host = args[self.HOST]
+        if host is None:
+            host = self._default_host
+        agent = self.get_agent(host)
+        user = args[self.USER]
+        if user is None:
+            user = self._default_users[host] # at least 1
+        agent_user = self._get_user(agent, user, self._exact)
+        public = args[self.PUBLIC] or False
+        desc = args[self.DESC] or self._default_description
+        print("files", paths, desc)
+        files = {}
+        if paths:
+            for path in paths:
+                self._set_content(files, expanduser(path))
+        else:
+            self._set_content_from_stdin(files, **args)
+        agent_user.create_gist(public, files, desc)
+
+    def _set_content(self, files, path):
+        with open(path, 'r') as f: # TODO: use binary mode depends on file type
+            content = f.read()
+            files[basename(path)] = InputFileContent(content)
+
+    def _set_content_from_stdin(self, files, **args):
+        filename = args[self.FILE_NAME] or self._default_filename
+        content = sys.stdin.read()
+        files[filename] = InputFileContent(content)
 
 class ClientError(Exception):
     """Client-side error"""

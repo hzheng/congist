@@ -31,9 +31,12 @@ def read_gists(congist, args):
             print("====={}======".format(filename))
         print(content, file=output)
 
+def create_gist(congist, args):
+    congist.create_gist(args.create, **vars(args))
+
 def _get_output(args):
     if args.output:
-        return open(expanduser(args.output), "w")
+        return open(expanduser(args.output), 'w')
     return sys.stdout
 
 def download_gists(congist, args):
@@ -52,6 +55,10 @@ def parse_args():
                        help='specify file description')
     parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
                        help='specify public gist(empty or 0:private 1:public)')
+    parser.add_argument('-c', '--create', nargs='*',
+                       help='create from input files')
+    parser.add_argument('-f', '--file-name',
+                       help='specify file name')
     parser.add_argument('-o', '--output',
                        help='specify output file')
     parser.add_argument('-d', '--download', action='store_true',
@@ -82,13 +89,13 @@ def main(argv=None):
     args = parse_args()
     # load system config
     cfg_file = join(dirname(abspath(__file__)), "../congist.yml")
-    with open(cfg_file, "r") as sys_file:
+    with open(cfg_file, 'r') as sys_file:
         sys_config = yaml.load(sys_file, yaml.SafeLoader)
         user_config_path = expanduser(sys_config['user_cfg_path'])
     
         # load user config
         # TODO: if user_config_path does not exist, prompt and create a template
-        with open(user_config_path, "r") as user_file:
+        with open(user_config_path, 'r') as user_file:
             # override order: sys config -> user config -> command args
             user_config = yaml.load(user_file, yaml.SafeLoader)
             config = {**sys_config, **user_config}
@@ -107,9 +114,10 @@ def main(argv=None):
                 download_gists(congist, args)
             elif args.upload:
                 upload_gists(congist, args)
+            elif args.create is not None:
+                create_gist(congist, args)
             else:
-                print("add gist from input") #TODO
-
+                raise ParameterError("No action specified")
 
 if __name__ == '__main__':
     exit_code = 1

@@ -11,3 +11,7 @@ commit:
     command: git add -A && (git diff --cached --exit-code >/dev/null || (git commit -m "{comment}" {verbose} && git push {verbose}))
 
     message: commit via congist
+
+default_filename: Untitled.txt
+
+default_description: Untitled
