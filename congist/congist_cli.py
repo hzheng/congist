@@ -7,6 +7,7 @@ Command-line client for Congist.
 
 from os.path import expanduser, dirname, abspath, join
 import sys
+import traceback
 import yaml
 import argparse
 import json
@@ -120,6 +121,7 @@ if __name__ == '__main__':
     except OSError as oe:
         print("Please fix the OS-related problem:", oe)
     except Exception as e:
-        print("Please report a bug", e)
+        traceback.print_exc(file=sys.stdout)
+        print("Please report the bug:", e)
     finally:
         sys.exit(exit_code)

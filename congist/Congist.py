@@ -4,8 +4,10 @@
 Congist is the core worker.
 """
 
-import os
 import re
+import os
+
+from os.path import expanduser, isdir, join
 
 from github import Github
 
@@ -33,7 +35,7 @@ class Congist:
     SSH = 'ssh'
 
     def __init__(self, config):
-        local_base = os.path.expanduser(config[self.LOCAL_BASE])
+        local_base = expanduser(config[self.LOCAL_BASE])
         if local_base[0] == '$':
             local_base = os.getenv(local_base[1:], os.getcwd())
         self._local_base = local_base
@@ -44,9 +46,9 @@ class Congist:
             if host == self.GITHUB:
                 for user in settings[self.USERS]:
                     username = user[self.USERNAME]
-                    user_local_base = self.get_local_host_base(host) + "/" + username
+                    user_local_base = self.get_local_host_base(host, username)
                     os.makedirs(user_local_base, exist_ok=True)
-                    self._local_dirs[host + "/" + username] = user_local_base
+                    self.set_local_dir(host, username, user_local_base)
                     agent[username] = Github(user[self.ACCESS_TOKEN])
             else:
                 raise ConfigurationError("Host " + host + " not yet supported")
@@ -64,11 +66,17 @@ class Congist:
     def local_base(self):
         return self._local_base
 
-    def get_local_host_base(self, host):
-        return self.local_base + "/" + host
+    def get_local_host_base(self, host, user):
+        return join(self.local_base, host, user)
 
-    def get_local_dir(self, user):
-        return self._local_dirs[user]
+    def set_local_dir(self, host, user, path):
+        self._local_dirs[host + "." + user] = path
+
+    def get_local_dir(self, host, user):
+        return self._local_dirs[host + "." + user]
+
+    def _get_local_parent(self, gist):
+        return self.get_local_dir(gist.host, gist.user)
 
     def get_agent(self, host):
         try:
@@ -78,6 +86,12 @@ class Congist:
 
     def get_users(self, host):
         return self.get_agent(host).keys()
+
+    def _get_user(self, agent, user):
+        try:
+            return agent[user].get_user()
+        except KeyError:
+            raise ParameterError("User " + user + " not found")
 
     def get_gists(self, **args):
         host = args[self.HOST]
@@ -89,7 +103,7 @@ class Congist:
             for user in users:
                 if args[self.VERBOSE]:
                     print("user", user) # TODO: change to callback
-                agent_user = agent[user].get_user()
+                agent_user = self._get_user(agent, user)
                 for g in agent_user.get_gists():
                     gist = Gist(g, host)
                     desc = args[self.DESC]
@@ -123,9 +137,8 @@ class Congist:
     def download_gists(self, **args):
         for gist in self.get_gists(**args):
             local_parent = self._get_local_parent(gist)
-            local_dir = local_parent + "/" + gist.id
-
-            if os.path.isdir(local_dir):
+            local_dir = join(local_parent, gist.id)
+            if isdir(local_dir):
                 self._pull_gists(local_dir, **args)
             else:
                 self._clone_gists(gist, local_parent, **args)
@@ -149,21 +162,18 @@ class Congist:
         else:
             os.system(cmd)
 
-    def _get_local_parent(self, gist):
-        return self.get_local_dir(gist.host + "/" + gist.user)
-
     def upload_gists(self, **args):
         for gist in self.get_gists(**args):
             self._upload_gists(gist, **args)
 
     def _upload_gists(self, gist, **args):
-        local_dir = self.get_local_host_base(gist.host) + "/" + gist.user
-        if not os.path.isdir(local_dir):
+        local_dir = self.get_local_host_base(gist.host, gist.user)
+        if not isdir(local_dir):
             return
 
         for subdir in os.listdir(local_dir):
-            subdir = local_dir + "/" + subdir
-            if not os.path.isdir(subdir):
+            subdir = join(local_dir, subdir)
+            if not isdir(subdir):
                 continue
             cmd = ('cd {subdir} &&' + self._commit_command).format(
                 subdir=subdir, comment=self._commit_message,
