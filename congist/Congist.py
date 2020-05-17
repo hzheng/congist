@@ -30,6 +30,7 @@ class Congist:
     COMMIT = 'commit'
     COMMAND = 'command'
     MESSAGE = 'message'
+    EXACT = 'exact'
     VERBOSE = 'verbose'
     DRY_RUN = 'dry_run'
     SSH = 'ssh'
@@ -57,6 +58,7 @@ class Congist:
         commit = config[self.COMMIT]
         self._commit_command = commit[self.COMMAND]
         self._commit_message = commit[self.MESSAGE]
+        self._exact = config[self.EXACT]
 
     @property
     def hosts(self):
@@ -87,11 +89,19 @@ class Congist:
     def get_users(self, host):
         return self.get_agent(host).keys()
 
-    def _get_user(self, agent, user):
-        try:
-            return agent[user].get_user()
-        except KeyError:
-            raise ParameterError("User " + user + " not found")
+    def _get_user(self, agent, user, exact):
+        if exact:
+            if user not in agent:
+                raise ParameterError("User " + user + " not found")
+        else:
+            matched_users = [u for u in agent.keys() if user in u ]
+            if len(matched_users) == 0:
+                raise ParameterError("No fuzzy matched user found for " + user)
+            if len(matched_users) > 1:
+                raise ParameterError("More than 1 user fuzzy match for " + user)
+            user = matched_users[0]
+
+        return agent[user].get_user()
 
     def get_gists(self, **args):
         host = args[self.HOST]
@@ -103,7 +113,7 @@ class Congist:
             for user in users:
                 if args[self.VERBOSE]:
                     print("user", user) # TODO: change to callback
-                agent_user = self._get_user(agent, user)
+                agent_user = self._get_user(agent, user, self._exact)
                 for g in agent_user.get_gists():
                     gist = Gist(g, host)
                     desc = args[self.DESC]

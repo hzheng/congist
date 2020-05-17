@@ -66,6 +66,8 @@ def parse_args():
                        help='change local base directory')
     parser.add_argument('-H', '--host',
                        help='specify host')
+    parser.add_argument('-E', '--exact', nargs='?', const=True, 
+                       help='enforce exact match')
     parser.add_argument('-S', '--ssh', action='store_true',
                        help='use SSH instead HTTPS')
     parser.add_argument('-U', '--user',
