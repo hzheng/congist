@@ -23,6 +23,7 @@ class Congist:
     ACCESS_TOKEN = 'access_token'
     GITHUB = 'github'
     FILE_TYPE = 'file_type'
+    FILE_NAME = 'file_name'
     FILE_EXT = 'file_extension'
     TEXT = 'text'
     PUBLIC = 'public'
@@ -36,29 +37,48 @@ class Congist:
     SSH = 'ssh'
 
     def __init__(self, config):
+        self._local_dirs = {}
+        self._host_agents = {}
+        self.default_host = None
+        self._default_users = {}
+        try:
+            self._read_config(config)
+        except KeyError as e:
+            raise ConfigurationError(e)
+
+    def _read_config(self, config):
         local_base = expanduser(config[self.LOCAL_BASE])
         if local_base[0] == '$':
             local_base = os.getenv(local_base[1:], os.getcwd())
         self._local_base = local_base
-        self._local_dirs = {}
-        self._host_agents = {}
-        for host, settings in config[self.REPOS].items():
-            agent = self._host_agents[host] = {}
-            if host == self.GITHUB:
-                for user in settings[self.USERS]:
-                    username = user[self.USERNAME]
-                    user_local_base = self.get_local_host_base(host, username)
-                    os.makedirs(user_local_base, exist_ok=True)
-                    self.set_local_dir(host, username, user_local_base)
-                    agent[username] = Github(user[self.ACCESS_TOKEN])
-            else:
-                raise ConfigurationError("Host " + host + " not yet supported")
         file_type = config[self.FILE_TYPE]
         self._text_pattern = re.compile(file_type[self.TEXT])
         commit = config[self.COMMIT]
         self._commit_command = commit[self.COMMAND]
         self._commit_message = commit[self.MESSAGE]
         self._exact = config[self.EXACT]
+        self._settings = config[self.REPOS]
+        if not self._settings:
+            raise ConfigurationError(self.REPOS + " has empty setting")
+        
+        for host, settings in self._settings.items():
+            agent = self._host_agents[host] = {}
+            if not self.default_host:
+                self._default_host = host
+            if host == self.GITHUB:
+                for user in settings[self.USERS]:
+                    username = user[self.USERNAME]
+                    if host not in self._default_users:
+                        self._default_users[host] = user
+                    user_local_base = self.get_local_host_base(host, username)
+                    os.makedirs(user_local_base, exist_ok=True)
+                    self.set_local_dir(host, username, user_local_base)
+                    agent[username] = Github(user[self.ACCESS_TOKEN])
+            else:
+                raise ConfigurationError("Host " + host + " not yet supported")
+            
+            if host not in self._default_users:
+                raise ConfigurationError("Please set at least one user at " + host)
 
     @property
     def hosts(self):
