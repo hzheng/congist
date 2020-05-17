@@ -185,7 +185,7 @@ class Congist:
             subdir = join(local_dir, subdir)
             if not isdir(subdir):
                 continue
-            cmd = ('cd {subdir} &&' + self._commit_command).format(
+            cmd = ("cd {subdir} &&" + self._commit_command).format(
                 subdir=subdir, comment=self._commit_message,
                 verbose=("" if args[self.VERBOSE] else "-q"))
             if args[self.DRY_RUN]:

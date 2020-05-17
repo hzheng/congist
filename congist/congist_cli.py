@@ -57,9 +57,9 @@ def parse_args():
     parser.add_argument('-d', '--download', action='store_true',
                        help='download gists')
     parser.add_argument('-e', '--file-extension',
-                       help='specify the file extensions(comma separated)')
+                       help='specify the file name suffix(comma separated)')
     parser.add_argument('-r', '--read', action='store_true',
-                       help='read gists')
+                       help='read text type or specified type gists')
     parser.add_argument('-u', '--upload', action='store_true',
                        help='upload gists')
     parser.add_argument('-C', '--local-base',
