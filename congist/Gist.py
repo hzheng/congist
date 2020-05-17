@@ -6,8 +6,9 @@ Gist represents a generic gist.
 
 class Gist:
     # assume gist is github.Gist.Gist object(temporarily)
-    def __init__(self, gist):
+    def __init__(self, gist, host):
         self._gist = gist
+        self._host = host
 
     def __repr__(self):
         return 'user={user}; url={url}; description={description}; public={public}'.format(
@@ -30,6 +31,10 @@ class Gist:
             "url": self.api_url,
             "files": { name : file.raw_url for name, file in self.files.items() }
         }
+
+    @property
+    def host(self):
+        return self._host
 
     @property
     def user(self):

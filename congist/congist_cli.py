@@ -11,57 +11,35 @@ import yaml
 import argparse
 import json
 
-from congist.Congist import Congist
+from congist.Congist import Congist, ConfigurationError, ParameterError
 
-def list(congist, args):
-    for user in congist.users:
-        if args.user is not None and args.user != user:
-            continue
+def list_gists(congist, args):
+    output = _get_output(args)
+    for gist in congist.get_gists(**vars(args)):
+        print(gist, file=output)
 
-        if args.verbose:
-            print("Listing gists for", user)
-        for gist in congist.get_gists(user):
-            print(gist)
+def index_gists(congist, args):
+    index = congist.get_infos(**vars(args))
+    json_output = json.dumps(list(index), indent=4)
+    print(json_output, file= _get_output(args))
 
-def index(congist, args):
-    if args.user is None:
-        index = congist.get_index()
-    else:
-        index = congist.get_user_index(args.user)
-    json_output = json.dumps(index, indent=4)
-    if args.output:
-        with open(args.output, "w") as f:
-            f.write(json_output)
-    else:
-        print(json_output)
-
-def read(congist, args):
-    output = sys.stdout
-    if args.output:
-        output = open(args.output, "w")
-    for filename, content in congist.read_file(**vars(args)):
+def read_gists(congist, args):
+    output = _get_output(args)
+    for filename, content in congist.get_files(**vars(args)):
         if args.verbose:
             print("====={}======".format(filename))
         print(content, file=output)
 
-def download(congist, args):
-    for user in congist.users:
-        if args.user is not None and args.user != user:
-            continue
+def _get_output(args):
+    if args.output:
+        return open(expanduser(args.output), "w")
+    return sys.stdout
 
-        if args.verbose:
-            print("Downloading gists for", user)
-        for gist in congist.get_gists(user):
-            congist.download_gist(gist, **vars(args))
+def download_gists(congist, args):
+    congist.download_gists(**vars(args))
 
-def upload(congist, args):
-    for user in congist.users:
-        if args.user is not None and args.user != user:
-            continue
-
-        if args.verbose:
-            print("Uploading gists for", user)
-        congist.upload_gist(user, **vars(args))
+def upload_gists(congist, args):
+    congist.upload_gists(**vars(args))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
@@ -69,6 +47,10 @@ def parse_args():
                        help='list gists')
     parser.add_argument('-i', '--index', action='store_true',
                        help='print index of gists')
+    parser.add_argument('-D', '--description',
+                       help='specify file description')
+    parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
+                       help='specify public gist(empty or 0:private 1:public)')
     parser.add_argument('-o', '--output',
                        help='specify output file')
     parser.add_argument('-d', '--download', action='store_true',
@@ -113,18 +95,31 @@ def main(argv=None):
 
             congist = Congist(config)
             if args.list:
-                list(congist, args)
+                list_gists(congist, args)
             elif args.index:
-                index(congist, args)
+                index_gists(congist, args)
             elif args.read:
-                read(congist, args)
+                read_gists(congist, args)
             elif args.download:
-                download(congist, args)
+                download_gists(congist, args)
             elif args.upload:
-                upload(congist, args)
+                upload_gists(congist, args)
             else:
                 print("add gist from input") #TODO
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    exit_code = 1
+    try:
+        main()
+        exit_code = 0
+    except (ConfigurationError, yaml.YAMLError) as ce:
+        print("Please fix the configuration setting:", ce)
+    except ParameterError as pe:
+        print("Please fix the parameter:", pe)
+    except OSError as oe:
+        print("Please fix the OS-related problem:", oe)
+    except Exception as e:
+        print("Please report a bug", e)
+    finally:
+        sys.exit(exit_code)
