@@ -65,6 +65,8 @@ def parse_args():
                        help='download gists')
     parser.add_argument('-e', '--file-extension',
                        help='specify the file name suffix(comma separated)')
+    parser.add_argument('-s', '--star', action='store_true',
+                       help='show only starred gists')
     parser.add_argument('-r', '--read', action='store_true',
                        help='read text type or specified type gists')
     parser.add_argument('-u', '--upload', action='store_true',

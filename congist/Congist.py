@@ -29,6 +29,7 @@ class Congist:
     FILE_EXT = 'file_extension'
     TEXT = 'text'
     PUBLIC = 'public'
+    STAR = 'star'
     DESC = 'description'
     DEFAULT_DESC = 'default_description'
     COMMIT = 'commit'
@@ -147,6 +148,9 @@ class Congist:
                     public = args[self.PUBLIC]
                     if (public == 0 and gist.public) or (public == 1 and not gist.public):
                         continue
+                    star = args[self.STAR]
+                    if star and not gist.starred:
+                        continue
                     yield gist
 
     def get_infos(self, **args):
@@ -229,7 +233,6 @@ class Congist:
         agent_user = self._get_user(agent, user, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
-        print("files", paths, desc)
         files = {}
         if paths:
             for path in paths:
