@@ -28,6 +28,7 @@ class Congist:
     DEFAULT_FILENAME = 'default_filename'
     FILE_EXT = 'file_extension'
     TEXT = 'text'
+    ID = 'id'
     PUBLIC = 'public'
     STAR = 'star'
     DESC = 'description'
@@ -146,6 +147,14 @@ class Congist:
                         yield gist
 
     def _filter_gist(self, gist, **args):
+        gist_id = args[self.ID]
+        if gist_id:
+            if self._exact:
+                if  gist_id != gist.id:
+                    return False
+            else:
+                if gist_id not in gist.id:
+                    return False
         desc = args[self.DESC]
         if desc and (gist.description is None or desc not in gist.description):
             return False

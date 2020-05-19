@@ -49,8 +49,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
-    parser.add_argument('-i', '--index', action='store_true',
+    parser.add_argument('-I', '--index', action='store_true',
                        help='print index of gists')
+    parser.add_argument('-i', '--id',
+                       help='specify gist id')
     parser.add_argument('-D', '--description',
                        help='specify file description')
     parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
