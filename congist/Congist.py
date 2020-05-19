@@ -142,16 +142,20 @@ class Congist:
                 agent_user = self._get_user(agent, user, self._exact)
                 for g in agent_user.get_gists():
                     gist = Gist(g, host)
-                    desc = args[self.DESC]
-                    if desc and (gist.description is None or desc not in gist.description):
-                        continue
-                    public = args[self.PUBLIC]
-                    if (public == 0 and gist.public) or (public == 1 and not gist.public):
-                        continue
-                    star = args[self.STAR]
-                    if star and not gist.starred:
-                        continue
-                    yield gist
+                    if self._filter_gist(gist, **args):
+                        yield gist
+
+    def _filter_gist(self, gist, **args):
+        desc = args[self.DESC]
+        if desc and (gist.description is None or desc not in gist.description):
+            return False
+        public = args[self.PUBLIC]
+        if (public == 0 and gist.public) or (public == 1 and not gist.public):
+            return False
+        star = args[self.STAR]
+        if star and not gist.starred:
+            return False
+        return True
 
     def get_infos(self, **args):
         for gist in self.get_gists(**args):
