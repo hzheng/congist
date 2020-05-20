@@ -45,13 +45,26 @@ def download_gists(congist, args):
 def upload_gists(congist, args):
     congist.upload_gists(**vars(args))
 
+def toggle_star_gists(congist, args):
+    for gist in congist.get_gists(**vars(args)):
+        if args.force or _confirm(gist, "toggle star"):
+            gist.toggle_starred()
+
+def _confirm(gist, action):
+    reply = input("{} gist {}? (y/Y for yes) : ".format(action, gist))
+    if reply.lower() == 'y':
+        return True
+    else:
+        print("skip", action)
+        return False
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
     parser.add_argument('-I', '--index', action='store_true',
                        help='print index of gists')
-    parser.add_argument('-i', '--id',
+    parser.add_argument('-i', '--id', nargs='+', 
                        help='specify gist id')
     parser.add_argument('-D', '--description',
                        help='specify file description')
@@ -61,6 +74,8 @@ def parse_args():
                        help='create from input files')
     parser.add_argument('-f', '--file-name',
                        help='specify file name')
+    parser.add_argument('--force', action='store_true',
+                       help='perform operations without confirmation')
     parser.add_argument('-o', '--output',
                        help='specify output file')
     parser.add_argument('-d', '--download', action='store_true',
@@ -69,6 +84,8 @@ def parse_args():
                        help='specify the file name suffix(comma separated)')
     parser.add_argument('-s', '--star', action='store_true',
                        help='show only starred gists')
+    parser.add_argument('-t', '--toggle-star', action='store_true',
+                       help='toggle star of gists')
     parser.add_argument('-r', '--read', action='store_true',
                        help='read text type or specified type gists')
     parser.add_argument('-u', '--upload', action='store_true',
@@ -120,6 +137,8 @@ def main(argv=None):
                 upload_gists(congist, args)
             elif args.create is not None:
                 create_gist(congist, args)
+            elif args.toggle_star is not None:
+                toggle_star_gists(congist, args)
             else:
                 raise ParameterError("No action specified")
 

@@ -150,10 +150,10 @@ class Congist:
         gist_id = args[self.ID]
         if gist_id:
             if self._exact:
-                if  gist_id != gist.id:
+                if  gist.id not in gist_id:
                     return False
             else:
-                if gist_id not in gist.id:
+                if all(gid not in gist.id for gid in gist_id):
                     return False
         desc = args[self.DESC]
         if desc and (gist.description is None or desc not in gist.description):

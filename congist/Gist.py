@@ -87,3 +87,12 @@ class Gist:
     @property
     def starred(self):
         return self._gist.is_starred()
+
+    def set_starred(self, starred):
+        if starred:
+            self._gist.set_starred()
+        else:
+            self._gist.reset_starred()
+
+    def toggle_starred(self):
+        self.set_starred(not self.starred)
