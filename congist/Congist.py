@@ -193,6 +193,10 @@ class Congist:
             return False
         return True
 
+    def sync_gists(self, **args):
+        self.download_gists(**args)
+        self.upload_gists(**args)
+
     def download_gists(self, **args):
         for gist in self.get_gists(**args):
             local_parent = self._get_local_parent(gist)
@@ -224,7 +228,8 @@ class Congist:
             os.system(cmd)
 
     def _pull_gists(self, local_dir, **args):
-        cmd = "cd {}; git pull{}".format(local_dir, "" if args[self.VERBOSE] else " -q")
+        #TODO: put rebase option in arguments or setting
+        cmd = "cd {}; git pull {}".format(local_dir, "" if args[self.VERBOSE] else " -q")
         if args[self.DRY_RUN]:
             print(cmd)
         else:

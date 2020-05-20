@@ -36,6 +36,9 @@ def _get_output(args):
         return open(expanduser(args.output), 'w')
     return sys.stdout
 
+def refresh_gists(congist, args):
+    congist.sync_gists(**vars(args))
+
 def download_gists(congist, args):
     congist.download_gists(**vars(args))
 
@@ -105,8 +108,6 @@ def parse_args():
                        help='perform operations without confirmation')
     parser.add_argument('-o', '--output',
                        help='specify output file')
-    parser.add_argument('--download', action='store_true',
-                       help='download gists')
     parser.add_argument('-e', '--file-extension',
                        help='specify the file name suffix(comma separated)')
     parser.add_argument('-s', '--star', action='store_true',
@@ -115,7 +116,11 @@ def parse_args():
                        help='toggle star of gists')
     parser.add_argument('-r', '--read', action='store_true',
                        help='read text type or specified type gists')
-    parser.add_argument('-u', '--upload', action='store_true',
+    parser.add_argument('-R', '--refresh', action='store_true',
+                       help='refresh/synchronize gists')
+    parser.add_argument('--download', action='store_true',
+                       help='download gists')
+    parser.add_argument('--upload', action='store_true',
                        help='upload gists')
     parser.add_argument('-C', '--local-base',
                        help='change local base directory')
@@ -125,7 +130,7 @@ def parse_args():
                        help='enforce exact match')
     parser.add_argument('--ssh', action='store_true',
                        help='use SSH instead HTTPS')
-    parser.add_argument('-U', '--user',
+    parser.add_argument('-u', '--user',
                        help='specify user')
     parser.add_argument('-v', '--verbose', action='store_true',
                        help='verbose output')
@@ -158,6 +163,8 @@ def main(argv=None):
                 index_gists(congist, args)
             elif args.read:
                 read_gists(congist, args)
+            elif args.refresh:
+                refresh_gists(congist, args)
             elif args.download:
                 download_gists(congist, args)
             elif args.upload:
