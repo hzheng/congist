@@ -10,6 +10,7 @@ class Gist:
     TAGS = 'tags'
     TAG_MARK = '#'
     TITLE = 'title'
+    SUBTITLE = 'subtitle'
     DESC_SPLIT = 'desc_split'
     DESC_JOIN = 'desc_join'
 
@@ -22,7 +23,11 @@ class Gist:
     def __init__(self, gist, host):
         self._gist = gist
         self._host = host
-        self._tags = self._split_desc(self.description)[self.TAGS]
+        desc_dict = self._split_desc(self.description)
+
+        self._title = desc_dict[self.TITLE]
+        self._subtitle = desc_dict[self.SUBTITLE]
+        self._tags = desc_dict[self.TAGS]
 
     def __repr__(self):
         return 'user={user}; url={url}; description={description}; public={public}'.format(
@@ -65,6 +70,10 @@ class Gist:
     @property
     def tags(self):
         return self._tags
+ 
+    @property
+    def title(self):
+        return self._title or self._subtitle or ''
     
     @property
     def public(self):

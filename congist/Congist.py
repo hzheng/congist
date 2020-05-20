@@ -7,6 +7,8 @@ Congist is the core worker.
 import re
 import os
 import sys
+import string
+import unicodedata
 
 from os.path import basename, expanduser, isdir, join
 
@@ -194,19 +196,28 @@ class Congist:
     def download_gists(self, **args):
         for gist in self.get_gists(**args):
             local_parent = self._get_local_parent(gist)
-            local_dir = join(local_parent, gist.id)
+            local_dir = join(local_parent, self._dir_name(gist))
             if isdir(local_dir):
                 self._pull_gists(local_dir, **args)
             else:
-                self._clone_gists(gist, local_parent, **args)
+                self._clone_gists(gist, local_dir, **args)
 
-    def _clone_gists(self, gist, local_parent, **args):
+    VALID_FILENAME_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
+    def _clean_name(self, name):
+        cleaned = unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore')
+        return ''.join(chr(c) for c in cleaned if chr(c) in self.VALID_FILENAME_CHARS)
+
+    def _dir_name(self, gist):
+        name = self._clean_name(gist.title).replace(' ', '_')
+        return name + "_" + gist.id[:6]
+
+    def _clone_gists(self, gist, local_dir, **args):
         if args[self.SSH]:
             gist_url = "git@" + gist.pull_url.replace('/', ':')[8:]
         else:
             gist_url = gist.pull_url
-        cmd = "cd {dir}; git clone {verbose} {url}".format(
-            dir=local_parent, verbose=("" if args[self.VERBOSE] else " -q"), url=gist_url)
+        cmd = "git clone {verbose} {url} {local_dir}".format(
+            local_dir=local_dir, verbose=("" if args[self.VERBOSE] else " -q"), url=gist_url)
         if args[self.DRY_RUN]:
             print(cmd)
         else:
