@@ -57,6 +57,13 @@ def desc_gists(congist, args):
         elif args.force or _confirm(gist, "set description"):
             gist.set_description(' '.join(args.desc))
 
+def tag_gists(congist, args):
+    for gist in congist.get_gists(**vars(args)):
+        if not args.tags:
+            print(gist.tags)
+        elif args.force or _confirm(gist, "set tag"):
+            gist.set_tags(args.tags)
+
 def toggle_star_gists(congist, args):
     for gist in congist.get_gists(**vars(args)):
         if args.force or _confirm(gist, "toggle star"):
@@ -82,6 +89,10 @@ def parse_args():
                        help='filter by gist description')
     parser.add_argument('--desc', nargs='*',
                        help='get/set description for gists')
+    parser.add_argument('-t', '--match-tags', nargs='+',
+                       help='filter by gist tags')
+    parser.add_argument('-T', '--tags', nargs='*',
+                       help='get/set tags for gists')
     parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
                        help='specify public gist(empty or 0:private 1:public)')
     parser.add_argument('-c', '--create', nargs='*',
@@ -100,7 +111,7 @@ def parse_args():
                        help='specify the file name suffix(comma separated)')
     parser.add_argument('-s', '--star', action='store_true',
                        help='show only starred gists')
-    parser.add_argument('-t', '--toggle-star', action='store_true',
+    parser.add_argument('-S', '--toggle-star', action='store_true',
                        help='toggle star of gists')
     parser.add_argument('-r', '--read', action='store_true',
                        help='read text type or specified type gists')
@@ -112,7 +123,7 @@ def parse_args():
                        help='specify host')
     parser.add_argument('-E', '--exact', nargs='?', const=True, 
                        help='enforce exact match')
-    parser.add_argument('-S', '--ssh', action='store_true',
+    parser.add_argument('--ssh', action='store_true',
                        help='use SSH instead HTTPS')
     parser.add_argument('-U', '--user',
                        help='specify user')
@@ -155,6 +166,8 @@ def main(argv=None):
                 create_gists(congist, args)
             elif args.desc is not None:
                 desc_gists(congist, args)
+            elif args.tags is not None:
+                tag_gists(congist, args)
             elif args.delete:
                 delete_gists(congist, args)
             elif args.toggle_star:

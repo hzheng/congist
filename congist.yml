@@ -4,6 +4,9 @@ local_base: $GIST_DATA
 
 exact: false
 
+desc_split: "(?P<titles>(\\[(?P<title>.*)\\])?(?P<subtitle>[^#]*))(?P<tags>(#.+))*"
+desc_join: "[{title}] {subtitle}{tags}"
+
 file_type:
     text: .+\.(bat|c|cfg|cpp|csharp|css|x?html|ini|java|jsp?|jsonc?|go|groovy|ini|md|php|pyi?|rb|sh|ts|txt|xml|xsl|yml)$
 

@@ -32,6 +32,7 @@ class Congist:
     PUBLIC = 'public'
     STAR = 'star'
     DESC = 'description'
+    MATCH_TAGS = 'match_tags'
     DEFAULT_DESC = 'default_description'
     COMMIT = 'commit'
     COMMAND = 'command'
@@ -48,6 +49,7 @@ class Congist:
         self._default_users = {}
         try:
             self._read_config(config)
+            Gist.init(config)
         except KeyError as e:
             raise ConfigurationError(e)
 
@@ -67,7 +69,7 @@ class Congist:
         self._default_filename = config[self.DEFAULT_FILENAME]
         if not self._settings:
             raise ConfigurationError(self.REPOS + " has empty setting")
-        
+
         for host, settings in self._settings.items():
             agent = self._host_agents[host] = {}
             if not self.default_host:
@@ -157,6 +159,9 @@ class Congist:
                     return False
         desc = args[self.DESC]
         if desc and (gist.description is None or desc not in gist.description):
+            return False
+        tags = args[self.MATCH_TAGS]
+        if tags and not gist.has_tags(tags):
             return False
         public = args[self.PUBLIC]
         if (public == 0 and gist.public) or (public == 1 and not gist.public):
