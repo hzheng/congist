@@ -59,10 +59,10 @@ def desc_gists(congist, args):
 
 def tag_gists(congist, args):
     for gist in congist.get_gists(**vars(args)):
-        if not args.tags:
+        if not args.set_tags:
             print(gist.tags)
         elif args.force or _confirm(gist, "set tag"):
-            gist.set_tags(args.tags)
+            gist.set_tags(args.set_tags)
 
 def toggle_star_gists(congist, args):
     for gist in congist.get_gists(**vars(args)):
@@ -85,13 +85,13 @@ def parse_args():
                        help='print index of gists')
     parser.add_argument('-i', '--id', nargs='+', 
                        help='specify gist id')
-    parser.add_argument('-D', '--description',
-                       help='filter by gist description')
-    parser.add_argument('--desc', nargs='*',
-                       help='get/set description for gists')
-    parser.add_argument('-t', '--match-tags', nargs='+',
+    parser.add_argument('-d', '--description',
+                       help='gist description(used in gist filter/creation)')
+    parser.add_argument('-D', '--set-desc', nargs='*',
+                       help='gist description(used in gist description getter/setter)')
+    parser.add_argument('-t', '--tags', nargs='+',
                        help='filter by gist tags')
-    parser.add_argument('-T', '--tags', nargs='*',
+    parser.add_argument('-T', '--set-tags', nargs='*',
                        help='get/set tags for gists')
     parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
                        help='specify public gist(empty or 0:private 1:public)')
@@ -105,7 +105,7 @@ def parse_args():
                        help='perform operations without confirmation')
     parser.add_argument('-o', '--output',
                        help='specify output file')
-    parser.add_argument('-d', '--download', action='store_true',
+    parser.add_argument('--download', action='store_true',
                        help='download gists')
     parser.add_argument('-e', '--file-extension',
                        help='specify the file name suffix(comma separated)')
@@ -164,9 +164,9 @@ def main(argv=None):
                 upload_gists(congist, args)
             elif args.create is not None:
                 create_gists(congist, args)
-            elif args.desc is not None:
+            elif args.set_desc is not None:
                 desc_gists(congist, args)
-            elif args.tags is not None:
+            elif args.set_tags is not None:
                 tag_gists(congist, args)
             elif args.delete:
                 delete_gists(congist, args)

@@ -32,7 +32,7 @@ class Congist:
     PUBLIC = 'public'
     STAR = 'star'
     DESC = 'description'
-    MATCH_TAGS = 'match_tags'
+    TAGS = 'tags'
     DEFAULT_DESC = 'default_description'
     COMMIT = 'commit'
     COMMAND = 'command'
@@ -160,7 +160,7 @@ class Congist:
         desc = args[self.DESC]
         if desc and (gist.description is None or desc not in gist.description):
             return False
-        tags = args[self.MATCH_TAGS]
+        tags = args[self.TAGS]
         if tags and not gist.has_tags(tags):
             return False
         public = args[self.PUBLIC]
