@@ -235,7 +235,7 @@ class Congist:
             else:
                 os.system(cmd)
 
-    def create_gist(self, paths, **args):
+    def create_gists(self, paths, **args):
         host = args[self.HOST]
         if host is None:
             host = self._default_host

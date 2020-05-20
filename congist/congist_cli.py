@@ -31,9 +31,6 @@ def read_gists(congist, args):
             print("====={}======".format(filename))
         print(content, file=output)
 
-def create_gist(congist, args):
-    congist.create_gist(args.create, **vars(args))
-
 def _get_output(args):
     if args.output:
         return open(expanduser(args.output), 'w')
@@ -44,6 +41,14 @@ def download_gists(congist, args):
 
 def upload_gists(congist, args):
     congist.upload_gists(**vars(args))
+
+def create_gists(congist, args):
+    congist.create_gists(args.create, **vars(args))
+
+def delete_gists(congist, args):
+    for gist in congist.get_gists(**vars(args)):
+        if args.force or _confirm(gist, "delete"):
+            gist.delete()
 
 def toggle_star_gists(congist, args):
     for gist in congist.get_gists(**vars(args)):
@@ -71,7 +76,9 @@ def parse_args():
     parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
                        help='specify public gist(empty or 0:private 1:public)')
     parser.add_argument('-c', '--create', nargs='*',
-                       help='create from input files')
+                       help='create gists from input files')
+    parser.add_argument('--delete', action='store_true',
+                       help='delete gists')
     parser.add_argument('-f', '--file-name',
                        help='specify file name')
     parser.add_argument('--force', action='store_true',
@@ -136,7 +143,9 @@ def main(argv=None):
             elif args.upload:
                 upload_gists(congist, args)
             elif args.create is not None:
-                create_gist(congist, args)
+                create_gists(congist, args)
+            elif args.delete:
+                delete_gists(congist, args)
             elif args.toggle_star is not None:
                 toggle_star_gists(congist, args)
             else:

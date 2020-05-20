@@ -96,3 +96,6 @@ class Gist:
 
     def toggle_starred(self):
         self.set_starred(not self.starred)
+
+    def delete(self):
+        self._gist.delete()
