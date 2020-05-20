@@ -19,10 +19,11 @@ def list_gists(congist, args):
     for gist in congist.get_gists(**vars(args)):
         print(gist, file=output)
 
+def index_all_gists(congist, args):
+    congist.generate_full_index(**vars(args))
+
 def index_gists(congist, args):
-    index = congist.get_infos(**vars(args))
-    json_output = json.dumps(list(index), indent=4)
-    print(json_output, file= _get_output(args))
+    congist.generate_index(_get_output(args), **vars(args))
 
 def read_gists(congist, args):
     output = _get_output(args)
@@ -84,9 +85,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
-    parser.add_argument('-I', '--index', action='store_true',
+    parser.add_argument('-i', '--index', action='store_true',
                        help='print index of gists')
-    parser.add_argument('-i', '--id', nargs='+', 
+    parser.add_argument('-I', '--full-index', action='store_true',
+                       help='print full index of gists(ignore filters)')
+    parser.add_argument('--id', nargs='+', 
                        help='specify gist id')
     parser.add_argument('-d', '--description',
                        help='gist description(used in gist filter/creation)')
@@ -159,6 +162,8 @@ def main(argv=None):
             congist = Congist(config)
             if args.list:
                 list_gists(congist, args)
+            elif args.full_index:
+                index_all_gists(congist, args)
             elif args.index:
                 index_gists(congist, args)
             elif args.read:

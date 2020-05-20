@@ -2,6 +2,10 @@ user_cfg_path: ~/.congist
 
 local_base: $GIST_DATA
 
+metadata_base: _metadata
+
+index_file: "{host}_index.json"
+
 exact: false
 
 desc_split: "(?P<titles>(\\[(?P<title>.*)\\])?(?P<subtitle>[^#]*))(?P<tags>(#.+))*"

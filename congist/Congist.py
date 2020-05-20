@@ -4,6 +4,7 @@
 Congist is the core worker.
 """
 
+import json
 import re
 import os
 import sys
@@ -18,6 +19,9 @@ from congist.Gist import Gist
 
 class Congist:
     LOCAL_BASE = 'local_base'
+    METADATA_BASE = 'metadata_base'
+    INDEX_FILE = 'index_file'
+    DISABLE_FILTER = '_disable_filter'
     REPOS = 'repos'
     USERNAME = 'username'
     HOST = 'host'
@@ -60,6 +64,8 @@ class Congist:
         if local_base[0] == '$':
             local_base = os.getenv(local_base[1:], os.getcwd())
         self._local_base = local_base
+        self._metadata_base = join(local_base, config[self.METADATA_BASE])
+        self._index_file = join(self._metadata_base, config[self.INDEX_FILE])
         file_type = config[self.FILE_TYPE]
         self._text_pattern = re.compile(file_type[self.TEXT])
         commit = config[self.COMMIT]
@@ -98,6 +104,10 @@ class Congist:
     @property
     def local_base(self):
         return self._local_base
+
+    @property
+    def metadata_base(self):
+        return self._metadata_base
 
     def get_local_host_base(self, host, user):
         return join(self.local_base, host, user)
@@ -151,6 +161,9 @@ class Congist:
                         yield gist
 
     def _filter_gist(self, gist, **args):
+        if self.DISABLE_FILTER in args:
+            return True
+
         gist_id = args[self.ID]
         if gist_id:
             if self._exact:
@@ -176,6 +189,28 @@ class Congist:
     def get_infos(self, **args):
         for gist in self.get_gists(**args):
             yield gist.get_info() 
+
+    def generate_full_index(self, **args):
+        args = args.copy()
+        args.update({self.USER: None, self.DISABLE_FILTER: True})
+        for host in self.hosts:
+            args.update({self.HOST: host})
+            index_file = self._index_file.format(host=host)
+            if args[self.VERBOSE]:
+                print("generating index file:", index_file)
+            if not args[self.DRY_RUN]:
+                with open(index_file, 'w') as f:
+                    self.generate_index(f, **args)
+
+    def generate_index(self, file, **args):
+        host = args[self.HOST]
+        if host is None:
+            host = self._default_host
+        index = { user: [] for user in self.get_users(host) }
+        for gist in self.get_gists(**args):
+            index[gist.user].append(gist.get_info())
+        json_output = json.dumps(index, indent=4)
+        print(json_output, file=file)
 
     def get_files(self, **args):
         for gist in self.get_gists(**args):
