@@ -99,3 +99,6 @@ class Gist:
 
     def delete(self):
         self._gist.delete()
+    
+    def set_description(self, description):
+        return self._gist.edit(description=description)

@@ -50,6 +50,13 @@ def delete_gists(congist, args):
         if args.force or _confirm(gist, "delete"):
             gist.delete()
 
+def desc_gists(congist, args):
+    for gist in congist.get_gists(**vars(args)):
+        if not args.desc:
+            print(gist.description)
+        elif args.force or _confirm(gist, "set description"):
+            gist.set_description(' '.join(args.desc))
+
 def toggle_star_gists(congist, args):
     for gist in congist.get_gists(**vars(args)):
         if args.force or _confirm(gist, "toggle star"):
@@ -72,7 +79,9 @@ def parse_args():
     parser.add_argument('-i', '--id', nargs='+', 
                        help='specify gist id')
     parser.add_argument('-D', '--description',
-                       help='specify file description')
+                       help='filter by gist description')
+    parser.add_argument('--desc', nargs='*',
+                       help='get/set description for gists')
     parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
                        help='specify public gist(empty or 0:private 1:public)')
     parser.add_argument('-c', '--create', nargs='*',
@@ -144,9 +153,11 @@ def main(argv=None):
                 upload_gists(congist, args)
             elif args.create is not None:
                 create_gists(congist, args)
+            elif args.desc is not None:
+                desc_gists(congist, args)
             elif args.delete:
                 delete_gists(congist, args)
-            elif args.toggle_star is not None:
+            elif args.toggle_star:
                 toggle_star_gists(congist, args)
             else:
                 raise ParameterError("No action specified")
