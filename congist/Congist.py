@@ -13,9 +13,8 @@ import unicodedata
 
 from os.path import basename, expanduser, isdir, join
 
-from github import Github, InputFileContent
-
 from congist.Gist import Gist
+from congist.GithubAgent import GithubAgent
 
 class Congist:
     LOCAL_BASE = 'local_base'
@@ -79,7 +78,7 @@ class Congist:
             raise ConfigurationError(self.REPOS + " has empty setting")
 
         for host, settings in self._settings.items():
-            agent = self._host_agents[host] = {}
+            agents = self._host_agents[host] = {}
             if not self.default_host:
                 self._default_host = host
             if host == self.GITHUB:
@@ -90,7 +89,7 @@ class Congist:
                     user_local_base = self.get_local_host_base(host, username)
                     os.makedirs(user_local_base, exist_ok=True)
                     self.set_local_dir(host, username, user_local_base)
-                    agent[username] = Github(user[self.ACCESS_TOKEN])
+                    agents[username] = GithubAgent(user[self.ACCESS_TOKEN])
             else:
                 raise ConfigurationError("Host " + host + " not yet supported")
             
@@ -121,41 +120,41 @@ class Congist:
     def _get_local_parent(self, gist):
         return self.get_local_dir(gist.host, gist.user)
 
-    def get_agent(self, host):
+    def get_agents(self, host):
         try:
             return self._host_agents[host]
         except KeyError:
             raise ParameterError("Host " + host + " not yet supported")
 
     def get_users(self, host):
-        return self.get_agent(host).keys()
+        return self.get_agents(host).keys()
 
-    def _get_user(self, agent, user, exact):
+    def _get_agent(self, agents, user, exact):
         if exact:
-            if user not in agent:
+            if user not in agents:
                 raise ParameterError("User " + user + " not found")
         else:
-            matched_users = [u for u in agent.keys() if user in u ]
+            matched_users = [u for u in agents.keys() if user in u ]
             if len(matched_users) == 0:
                 raise ParameterError("No fuzzy matched user found for " + user)
             if len(matched_users) > 1:
                 raise ParameterError("More than 1 user fuzzy match for " + user)
             user = matched_users[0]
 
-        return agent[user].get_user()
+        return agents[user]
 
     def get_gists(self, **args):
         host = args[self.HOST]
         hosts = self.hosts if host is None else [host]
         for host in hosts:
-            agent = self.get_agent(host)
+            agents = self.get_agents(host)
             user = args[self.USER]
             users = [user] if user else self.get_users(host)
             for user in users:
                 if args[self.VERBOSE]:
                     print("user", user) # TODO: change to callback
-                agent_user = self._get_user(agent, user, self._exact)
-                for g in agent_user.get_gists():
+                agent = self._get_agent(agents, user, self._exact)
+                for g in agent.get_gists():
                     gist = Gist(g, host)
                     if self._filter_gist(gist, **args):
                         yield gist
@@ -295,11 +294,11 @@ class Congist:
         host = args[self.HOST]
         if host is None:
             host = self._default_host
-        agent = self.get_agent(host)
+        agents = self.get_agents(host)
         user = args[self.USER]
         if user is None:
             user = self._default_users[host] # at least 1
-        agent_user = self._get_user(agent, user, self._exact)
+        agent = self._get_agent(agents, user, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
         files = {}
@@ -308,17 +307,17 @@ class Congist:
                 self._set_content(files, expanduser(path))
         else:
             self._set_content_from_stdin(files, **args)
-        agent_user.create_gist(public, files, desc)
+        agent.create_gist(files, public, desc)
 
     def _set_content(self, files, path):
         with open(path, 'r') as f: # TODO: use binary mode depends on file type
             content = f.read()
-            files[basename(path)] = InputFileContent(content)
+            files[basename(path)] = content
 
     def _set_content_from_stdin(self, files, **args):
         filename = args[self.FILE_NAME] or self._default_filename
         content = sys.stdin.read()
-        files[filename] = InputFileContent(content)
+        files[filename] = content
 
 class ClientError(Exception):
     """Client-side error"""
