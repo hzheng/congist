@@ -3,6 +3,14 @@
 import re
 
 """
+GistUser represents a gist user.
+"""
+
+from collections import namedtuple
+GistUser = namedtuple('GistUser', ['username', 'access_token'])
+
+
+"""
 Gist represents a generic gist class.
 """
 
@@ -19,9 +27,10 @@ class Gist:
         Gist._desc_pattern = re.compile(config[Gist.DESC_SPLIT])
         Gist._desc_format = config[Gist.DESC_JOIN]
 
-    def __init__(self, gist):
-        desc_dict = self._split_desc(self.description)
+    def __init__(self, gist, username):
+        self._username = username
 
+        desc_dict = self._split_desc(self.description)
         self._title = desc_dict[self.TITLE]
         self._subtitle = desc_dict[self.SUBTITLE]
         self._tags = desc_dict[self.TAGS]
@@ -54,7 +63,8 @@ class Gist:
         return type_name[:-4].lower()
 
     @property
-    def user(self): ...
+    def user(self):
+        return self._username
 
     @property
     def id(self): ...

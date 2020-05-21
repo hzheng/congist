@@ -8,17 +8,9 @@ Gist represents a Github gist.
 
 class GithubGist(Gist):
     # assume gist is github.Gist.Gist object(temporarily)
-    def __init__(self, gist):
+    def __init__(self, gist, username):
         self._gist = gist
-        desc_dict = self._split_desc(self.description)
-
-        self._title = desc_dict[self.TITLE]
-        self._subtitle = desc_dict[self.SUBTITLE]
-        self._tags = desc_dict[self.TAGS]
-
-    @property
-    def user(self):
-        return self._gist.owner.login
+        super().__init__(gist, username)
 
     @property
     def id(self):

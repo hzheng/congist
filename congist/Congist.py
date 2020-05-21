@@ -14,7 +14,7 @@ import importlib
 
 from os.path import basename, expanduser, isdir, join
 
-from congist.Gist import Gist
+from congist.Gist import GistUser, Gist
 
 class Congist:
     LOCAL_BASE = 'local_base'
@@ -23,11 +23,9 @@ class Congist:
     DISABLE_FILTER = '_disable_filter'
     AGENTS = 'agents'
     REPOS = 'repos'
-    USERNAME = 'username'
     HOST = 'host'
     USERS = 'users'
     USER = 'user'
-    ACCESS_TOKEN = 'access_token'
     FILE_TYPE = 'file_type'
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
@@ -89,7 +87,8 @@ class Congist:
             if not self.default_host:
                 self._default_host = host
             for user in settings[self.USERS]:
-                username = user[self.USERNAME]
+                gist_user = GistUser(**user)
+                username = gist_user.username
                 if host not in self._default_users:
                     self._default_users[host] = username
                 user_local_base = self.get_local_host_base(host, username)
@@ -100,8 +99,7 @@ class Congist:
                 module = importlib.import_module(agent_module)
                 agent_type = getattr(module, agent_class)
                 index_file = self._index_file.format(host=host)
-                agents[username] = agent_type(access_token=user[self.ACCESS_TOKEN],
-                                              index_file=index_file)
+                agents[username] = agent_type(gist_user=gist_user, index_file=index_file)
             
             if host not in self._default_users:
                 raise ConfigurationError("Please set at least one user at " + host)
@@ -151,7 +149,7 @@ class Congist:
                 raise ParameterError("More than 1 user fuzzy match for " + user)
             user = matched_users[0]
 
-        return user, agents[user]
+        return agents[user]
 
     def get_gists(self, **args):
         host = args[self.HOST]
@@ -163,7 +161,7 @@ class Congist:
             for user in users:
                 if args[self.VERBOSE]:
                     print("user", user) # TODO: change to callback
-                user, agent = self._get_agent(agents, user, self._exact)
+                agent = self._get_agent(agents, user, self._exact)
                 for gist in agent.get_gists():
                     if self._filter_gist(gist, **args):
                         yield gist
@@ -307,7 +305,7 @@ class Congist:
         user = args[self.USER]
         if user is None:
             user = self._default_users[host] # at least 1
-        user, agent = self._get_agent(agents, user, self._exact)
+        agent = self._get_agent(agents, user, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
         files = {}
