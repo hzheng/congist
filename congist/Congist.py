@@ -10,24 +10,24 @@ import os
 import sys
 import string
 import unicodedata
+import importlib
 
 from os.path import basename, expanduser, isdir, join
 
 from congist.Gist import Gist
-from congist.GithubAgent import GithubAgent
 
 class Congist:
     LOCAL_BASE = 'local_base'
     METADATA_BASE = 'metadata_base'
     INDEX_FILE = 'index_file'
     DISABLE_FILTER = '_disable_filter'
+    AGENTS = 'agents'
     REPOS = 'repos'
     USERNAME = 'username'
     HOST = 'host'
     USERS = 'users'
     USER = 'user'
     ACCESS_TOKEN = 'access_token'
-    GITHUB = 'github'
     FILE_TYPE = 'file_type'
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
@@ -53,7 +53,8 @@ class Congist:
         self.default_host = None
         self._default_users = {}
         try:
-            self._read_config(config)
+            agent_types = self._read_config(config)
+            self._set_agents(agent_types)
             Gist.init(config)
         except KeyError as e:
             raise ConfigurationError(e)
@@ -77,21 +78,28 @@ class Congist:
         if not self._settings:
             raise ConfigurationError(self.REPOS + " has empty setting")
 
+        return config[self.AGENTS]
+
+    def _set_agents(self, agent_types):
         for host, settings in self._settings.items():
+            if host not in agent_types:
+                raise ConfigurationError("Host " + host + " not yet supported")
+
             agents = self._host_agents[host] = {}
             if not self.default_host:
                 self._default_host = host
-            if host == self.GITHUB:
-                for user in settings[self.USERS]:
-                    username = user[self.USERNAME]
-                    if host not in self._default_users:
-                        self._default_users[host] = username
-                    user_local_base = self.get_local_host_base(host, username)
-                    os.makedirs(user_local_base, exist_ok=True)
-                    self.set_local_dir(host, username, user_local_base)
-                    agents[username] = GithubAgent(user[self.ACCESS_TOKEN])
-            else:
-                raise ConfigurationError("Host " + host + " not yet supported")
+            for user in settings[self.USERS]:
+                username = user[self.USERNAME]
+                if host not in self._default_users:
+                    self._default_users[host] = username
+                user_local_base = self.get_local_host_base(host, username)
+                os.makedirs(user_local_base, exist_ok=True)
+                self.set_local_dir(host, username, user_local_base)
+                # dynamically load agent class
+                agent_module, agent_class = agent_types[host].split('.')
+                module = importlib.import_module(agent_module)
+                agent_type = getattr(module, agent_class)
+                agents[username] = agent_type(user[self.ACCESS_TOKEN])
             
             if host not in self._default_users:
                 raise ConfigurationError("Please set at least one user at " + host)
