@@ -3,7 +3,7 @@
 import re
 
 """
-Gist represents a generic gist.
+Gist represents a generic gist class.
 """
 
 class Gist:
@@ -19,10 +19,7 @@ class Gist:
         Gist._desc_pattern = re.compile(config[Gist.DESC_SPLIT])
         Gist._desc_format = config[Gist.DESC_JOIN]
 
-    # assume gist is github.Gist.Gist object(temporarily)
-    def __init__(self, gist, host):
-        self._gist = gist
-        self._host = host
+    def __init__(self, gist):
         desc_dict = self._split_desc(self.description)
 
         self._title = desc_dict[self.TITLE]
@@ -53,19 +50,17 @@ class Gist:
 
     @property
     def host(self):
-        return self._host
+        type_name = type(self).__name__
+        return type_name[:-4].lower()
 
     @property
-    def user(self):
-        return self._gist.owner.login
+    def user(self): ...
 
     @property
-    def id(self):
-        return self._gist.id
+    def id(self): ...
  
     @property
-    def description(self):
-        return self._gist.description or ""
+    def description(self): ...
  
     @property
     def tags(self):
@@ -76,59 +71,43 @@ class Gist:
         return self._title or self._subtitle or ''
     
     @property
-    def public(self):
-        return self._gist.public
+    def public(self): ...
  
     @property
-    def api_url(self):
-        return self._gist.url
+    def api_url(self): ...
  
     @property
-    def html_url(self):
-        return self._gist.html_url
+    def html_url(self): ...
  
     @property
-    def pull_url(self):
-        return self._gist.git_pull_url
+    def pull_url(self): ...
  
     @property
-    def push_url(self):
-        return self._gist.git_push_url
+    def push_url(self): ...
  
     @property
-    def html_url(self):
-        return self._gist.html_url
+    def html_url(self): ...
  
     @property
-    def files(self):
-        return self._gist.files
+    def files(self): ...
     
     @property
-    def created(self):
-        return self._gist.created_at.isoformat()
+    def created(self): ...
     
     @property
-    def updated(self):
-        return self._gist.updated_at.isoformat()
+    def updated(self): ...
 
     @property
-    def starred(self):
-        return self._gist.is_starred()
+    def starred(self): ...
 
-    def set_starred(self, starred):
-        if starred:
-            self._gist.set_starred()
-        else:
-            self._gist.reset_starred()
+    def set_starred(self, starred): ...
 
     def toggle_starred(self):
         self.set_starred(not self.starred)
 
-    def delete(self):
-        self._gist.delete()
+    def delete(self): ...
     
-    def set_description(self, description):
-        self._gist.edit(description=description)
+    def set_description(self, description): ...
  
     def set_tags(self, tags):
         desc = self._split_desc(self.description)
