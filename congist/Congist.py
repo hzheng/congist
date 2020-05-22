@@ -145,31 +145,31 @@ class Congist:
     def get_users(self, host):
         return self.get_agents(host).keys()
 
-    def _get_agent(self, agents, user, exact):
+    def _get_agent(self, agents, username, exact):
         if exact:
-            if user not in agents:
-                raise ParameterError("User " + user + " not found")
+            if username not in agents:
+                raise ParameterError("Username " + username + " not found")
         else:
-            matched_users = [u for u in agents.keys() if user in u ]
+            matched_users = [u for u in agents.keys() if username in u ]
             if len(matched_users) == 0:
-                raise ParameterError("No fuzzy matched user found for " + user)
+                raise ParameterError("No fuzzy matched username found for " + username)
             if len(matched_users) > 1:
-                raise ParameterError("More than 1 user fuzzy match for " + user)
-            user = matched_users[0]
+                raise ParameterError("More than 1 username fuzzy match for " + username)
+            username = matched_users[0]
 
-        return agents[user]
+        return agents[username]
 
     def get_gists(self, **args):
         host = args[self.HOST]
         hosts = self.hosts if host is None else [host]
         for host in hosts:
             agents = self.get_agents(host, args[self.LOCAL])
-            user = args[self.USER]
-            users = [user] if user else self.get_users(host)
-            for user in users:
+            username = args[self.USER]
+            users = [username] if username else self.get_users(host)
+            for u in users:
                 if args[self.VERBOSE]:
-                    print("user", user) # TODO: change to callback
-                agent = self._get_agent(agents, user, self._exact)
+                    print("username", u) # TODO: change to callback
+                agent = self._get_agent(agents, u, self._exact)
                 for gist in agent.get_gists():
                     if self._filter_gist(gist, **args):
                         yield gist
@@ -220,9 +220,9 @@ class Congist:
         host = args[self.HOST]
         if host is None:
             host = self._default_host
-        index = { user: [] for user in self.get_users(host) }
+        index = {u: [] for u in self.get_users(host)}
         for gist in self.get_gists(**args):
-            index[gist.user].append(gist.get_info())
+            index[gist.username].append(gist.get_info())
         json_output = json.dumps(index, indent=4)
         print(json_output, file=file)
 
@@ -284,7 +284,7 @@ class Congist:
             self._upload_gists(gist, **args)
 
     def _upload_gists(self, gist, **args):
-        local_dir = self.get_local_host_base(gist.host, gist.user)
+        local_dir = self.get_local_host_base(gist.host, gist.username)
         if not isdir(local_dir):
             return
 
@@ -305,10 +305,10 @@ class Congist:
         if host is None:
             host = self._default_host
         agents = self.get_agents(host)
-        user = args[self.USER]
-        if user is None:
-            user = self._default_users[host] # at least 1
-        agent = self._get_agent(agents, user, self._exact)
+        username = args[self.USER]
+        if username is None:
+            username = self._default_users[host] # at least 1
+        agent = self._get_agent(agents, username, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
         files = {}

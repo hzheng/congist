@@ -101,7 +101,7 @@ class Gist:
  
     @property
     def files(self):
-        return {name: file.url for name, file in self.file_entries.items() }
+        return {f.name: f.url for f in self.file_entries }
  
     @property
     def file_entries(self): ...
