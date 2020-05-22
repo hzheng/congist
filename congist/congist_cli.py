@@ -9,23 +9,137 @@ from os.path import expanduser, dirname, abspath, join
 import sys
 import traceback
 import yaml
-import argparse
+from argparse import ArgumentParser, ArgumentTypeError
 import json
 
 from congist.Congist import Congist, ConfigurationError, ParameterError
 
-def list_gists(congist, args):
+
+def _get_output(args):
+    if args.output:
+        return open(expanduser(args.output), 'w')
+    return sys.stdout
+
+
+def _confirm(gist, action):
+    reply = input("{} gist {}? (y/Y for yes) : ".format(action, gist))
+    if reply.lower() == 'y':
+        return True
+    else:
+        print("skip", action)
+        return False
+
+#############Command Argument Parse#############
+parser = ArgumentParser(description='Construct your gists')
+subparsers = parser.add_subparsers(dest="subcommand")
+
+def argument(*args, **kwargs):
+    return (list(args), kwargs)
+
+def subcommand(*args):
+    def decorator(f):
+        parser = subparsers.add_parser(f.__name__, description=f.__doc__)
+        for arg in args:
+            parser.add_argument(*arg[0], **arg[1])
+        parser.set_defaults(function=f)
+    return decorator
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.upper() in ('T', 'Y', '1'):
+        return True
+    elif v.upper() in ('F', 'N', '0'):
+        return False
+    else:
+        raise ArgumentTypeError('Boolean value(T/F, Y/N, 1/0) expected')
+
+flags = (
+    argument('-v', '--verbose', action='store_true',
+             help='verbose output'),
+    argument('-L', '--local-base',
+             help='specify local base directory'))
+
+read_flags = (
+    argument('-o', '--output',
+             help='specify output file'),
+    argument('-l', '--local', action='store_true',
+             help='get info from local instead of remote'))
+
+update_flags = (
+    argument('-n', '--dry-run', action='store_true',
+             help='dry run'),
+    argument('--force', action='store_true',
+             help='perform operations without confirmation'))
+
+user_specifiers = (
+    argument('-H', '--host',
+             help='specify host'),
+    argument('-u', '--user',
+             help='specify user'))
+
+specifiers = (
+    *user_specifiers,
+    argument('-E', '--exact', nargs='?', const=True,
+             help='enforce exact match'),
+    argument('-p', '--public', nargs='?', 
+             type=str2bool, default=None,
+             help='specify public gists(1=public, 0=private)'),
+    argument('-s', '--star', nargs='?', 
+             type=str2bool, default=None,
+             help='specify starred gists(1=starred, 0=unstarred)'),
+    argument('-t', '--tags', nargs='+',
+             help='specify gist tags'),
+    argument('-d', '--description',
+             help='specify gist description'),
+    argument('-f', '--file-name',
+             help='specify file name'))
+
+filters = (
+    *specifiers,
+    argument('-i', '--id', nargs='+', 
+             help='filter by gist IDs'),
+    argument('-e', '--file-extension',
+             help='filter by the file name suffix(comma separated)'))
+
+@subcommand(*flags, *read_flags, *filters)
+def ls(congist, args):
+    """List all filtered gists."""
     output = _get_output(args)
     for gist in congist.get_gists(**vars(args)):
         print(gist, file=output)
 
-def index_all_gists(congist, args):
-    congist.generate_full_index(**vars(args))
-
-def index_gists(congist, args):
+@subcommand(*flags, *read_flags, *filters)
+def info(congist, args):
+    """Print all filtered gists' info in JSON format."""
     congist.generate_index(_get_output(args), **vars(args))
 
-def read_gists(congist, args):
+@subcommand(*flags)
+def index(congist, args):
+    """Dump all gists' info in JSON format to an index file."""
+    congist.generate_full_index(**vars(args))
+
+@subcommand(*flags, *filters, *update_flags,
+            argument('-D', '--download', action='store_true',
+                     help='download gists only'),
+            argument('-U', '--upload', action='store_true',
+                     help='upload gists only'),
+            argument('-S', '--ssh', action='store_true',
+                     help='clone via SSH instead HTTPS'))
+def sync(congist, args):
+    """Refresh/synchronize gists."""
+    if args.download:
+        congist.download_gists(**vars(args))
+    elif args.upload:
+        congist.upload_gists(**vars(args))
+    else:
+        congist.sync_gists(**vars(args))
+
+@subcommand(*flags, *read_flags, *filters,
+            argument('-b', '--binary', action='store_true',
+                     help='including binary file(default: text file only)'))
+def read(congist, args):
+    """Read filtered gists."""
     output = _get_output(args)
     for f in congist.get_files(**vars(args)):
         content = f.content
@@ -36,121 +150,61 @@ def read_gists(congist, args):
         else:
             output.buffer.write(content)
 
-def _get_output(args):
-    if args.output:
-        return open(expanduser(args.output), 'w')
-    return sys.stdout
+@subcommand(argument('new_desc', metavar='desc', nargs='?',
+                     help='new gist description(show the current if absent)'),
+            *flags, *update_flags, *filters)
+def desc(congist, args):
+    """Get or set description for filtered gists."""
+    for gist in congist.get_gists(**vars(args)):
+        if not args.new_desc:
+            print(gist.description)
+        elif args.force or _confirm(gist, "set description"):
+            gist.set_description(args.new_desc)
 
-def refresh_gists(congist, args):
-    congist.sync_gists(**vars(args))
+@subcommand(argument('new_tags', metavar='tag', nargs='*',
+                     help='new gist tags(show the current if absent)'),
+            *flags, *update_flags, *filters)
+def tag(congist, args):
+    """Get or set tags for filtered gists."""
+    for gist in congist.get_gists(**vars(args)):
+        if not args.new_tags:
+            print(",".join(gist.tags) if gist.tags else "(no tags)")
+        elif args.force or _confirm(gist, "set tag"):
+            gist.set_tags(args.new_tags)
 
-def download_gists(congist, args):
-    congist.download_gists(**vars(args))
+@subcommand(argument('new_star', metavar='star', nargs='?',
+                     help='star if 1 else unstar gist(show the current if absent'),
+            *flags, *update_flags, *filters)
+def star(congist, args):
+    """Get or set star for filtered gists."""
+    for gist in congist.get_gists(**vars(args)):
+        if not args.new_star:
+            print(gist.starred)
+        elif args.force or _confirm(gist, "set star"):
+            gist.set_starred(args.new_star == '1')
+ 
+@subcommand(argument('file_paths', metavar='file-path', nargs='*',
+                    help='file path(stdin if absent)'),
+            *flags, *update_flags, *specifiers)
+def new(congist, args):
+    """Create gists from input files."""
+    congist.create_gists(args.file_paths, **vars(args))
 
-def upload_gists(congist, args):
-    congist.upload_gists(**vars(args))
-
-def create_gists(congist, args):
-    congist.create_gists(args.create, **vars(args))
-
-def delete_gists(congist, args):
+@subcommand(*flags, *update_flags, *filters)
+def rm(congist, args):
+    """Remove filtered gists."""
     for gist in congist.get_gists(**vars(args)):
         if args.force or _confirm(gist, "delete"):
             gist.delete()
 
-def desc_gists(congist, args):
-    for gist in congist.get_gists(**vars(args)):
-        if not args.desc:
-            print(gist.description)
-        elif args.force or _confirm(gist, "set description"):
-            gist.set_description(' '.join(args.desc))
-
-def tag_gists(congist, args):
-    for gist in congist.get_gists(**vars(args)):
-        if not args.set_tags:
-            print(gist.tags)
-        elif args.force or _confirm(gist, "set tag"):
-            gist.set_tags(args.set_tags)
-
-def toggle_star_gists(congist, args):
-    for gist in congist.get_gists(**vars(args)):
-        if args.force or _confirm(gist, "toggle star"):
-            gist.toggle_starred()
-
-def _confirm(gist, action):
-    reply = input("{} gist {}? (y/Y for yes) : ".format(action, gist))
-    if reply.lower() == 'y':
-        return True
-    else:
-        print("skip", action)
-        return False
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Construct your gists')
-    parser.add_argument('-l', '--list', action='store_true',
-                       help='list gists')
-    parser.add_argument('-L', '--local', action='store_true',
-                       help='get info from local instead of remote')
-    parser.add_argument('-i', '--index', action='store_true',
-                       help='print index of gists')
-    parser.add_argument('-I', '--full-index', action='store_true',
-                       help='print full index of gists(ignore filters)')
-    parser.add_argument('--id', nargs='+', 
-                       help='specify gist id')
-    parser.add_argument('-d', '--description',
-                       help='gist description(used in gist filter/creation)')
-    parser.add_argument('-D', '--set-desc', nargs='*',
-                       help='gist description(used in gist description getter/setter)')
-    parser.add_argument('-t', '--tags', nargs='+',
-                       help='filter by gist tags')
-    parser.add_argument('-T', '--set-tags', nargs='*',
-                       help='get/set tags for gists')
-    parser.add_argument('-p', '--public', nargs='?', const=0, type=int,
-                       help='specify public gist(empty or 0:private 1:public)')
-    parser.add_argument('-c', '--create', nargs='*',
-                       help='create gists from input files')
-    parser.add_argument('--delete', action='store_true',
-                       help='delete gists')
-    parser.add_argument('-f', '--file-name',
-                       help='specify file name')
-    parser.add_argument('-b', '--binary', action='store_true',
-                       help='including binary file')
-    parser.add_argument('--force', action='store_true',
-                       help='perform operations without confirmation')
-    parser.add_argument('-o', '--output',
-                       help='specify output file')
-    parser.add_argument('-e', '--file-extension',
-                       help='specify the file name suffix(comma separated)')
-    parser.add_argument('-s', '--star', action='store_true',
-                       help='show only starred gists')
-    parser.add_argument('-S', '--toggle-star', action='store_true',
-                       help='toggle star of gists')
-    parser.add_argument('-r', '--read', action='store_true',
-                       help='read text type or specified type gists')
-    parser.add_argument('-R', '--refresh', action='store_true',
-                       help='refresh/synchronize gists')
-    parser.add_argument('--download', action='store_true',
-                       help='download gists')
-    parser.add_argument('--upload', action='store_true',
-                       help='upload gists')
-    parser.add_argument('-C', '--local-base',
-                       help='change local base directory')
-    parser.add_argument('-H', '--host',
-                       help='specify host')
-    parser.add_argument('-E', '--exact', nargs='?', const=True, 
-                       help='enforce exact match')
-    parser.add_argument('--ssh', action='store_true',
-                       help='use SSH instead HTTPS')
-    parser.add_argument('-u', '--user',
-                       help='specify user')
-    parser.add_argument('-v', '--verbose', action='store_true',
-                       help='verbose output')
-    parser.add_argument('-n', '--dry-run', action='store_true',
-                       help='dry run')
-    return parser.parse_args()
 
 def main(argv=None):
-    args = parse_args()
+    # read command args
+    args = parser.parse_args()
+    if args.subcommand is None:
+        parser.print_help()
+        return
+    
     # load system config
     cfg_file = join(dirname(abspath(__file__)), "../congist.yml")
     with open(cfg_file, 'r') as sys_file:
@@ -167,33 +221,7 @@ def main(argv=None):
                 if value is not None:
                     config[key] = value
 
-            congist = Congist(config)
-            if args.list:
-                list_gists(congist, args)
-            elif args.full_index:
-                index_all_gists(congist, args)
-            elif args.index:
-                index_gists(congist, args)
-            elif args.read:
-                read_gists(congist, args)
-            elif args.refresh:
-                refresh_gists(congist, args)
-            elif args.download:
-                download_gists(congist, args)
-            elif args.upload:
-                upload_gists(congist, args)
-            elif args.create is not None:
-                create_gists(congist, args)
-            elif args.set_desc is not None:
-                desc_gists(congist, args)
-            elif args.set_tags is not None:
-                tag_gists(congist, args)
-            elif args.delete:
-                delete_gists(congist, args)
-            elif args.toggle_star:
-                toggle_star_gists(congist, args)
-            else:
-                raise ParameterError("No action specified")
+            args.function(Congist(config), args)
 
 if __name__ == '__main__':
     exit_code = 1

@@ -162,8 +162,9 @@ class Congist:
     def get_gists(self, **args):
         host = args[self.HOST]
         hosts = self.hosts if host is None else [host]
+        local = args.get(self.LOCAL, False)
         for host in hosts:
-            agents = self.get_agents(host, args[self.LOCAL])
+            agents = self.get_agents(host, local)
             username = args[self.USER]
             users = [username] if username else self.get_users(host)
             for u in users:
@@ -193,10 +194,10 @@ class Congist:
         if tags and not gist.has_tags(tags):
             return False
         public = args[self.PUBLIC]
-        if (public == 0 and gist.public) or (public == 1 and not gist.public):
+        if (public is False and gist.public) or (public and not gist.public):
             return False
         star = args[self.STAR]
-        if star and not gist.starred:
+        if (star is False and gist.starred) or (star and not gist.starred):
             return False
         return True
 
@@ -212,9 +213,8 @@ class Congist:
             index_file = self._index_file.format(host=host)
             if args[self.VERBOSE]:
                 print("generating index file:", index_file)
-            if not args[self.DRY_RUN]:
-                with open(index_file, 'w') as f:
-                    self.generate_index(f, **args)
+            with open(index_file, 'w') as f:
+                self.generate_index(f, **args)
 
     def generate_index(self, file, **args):
         host = args[self.HOST]
@@ -288,7 +288,9 @@ class Congist:
         if not isdir(local_dir):
             return
 
-        for subdir in os.listdir(local_dir):
+        # subdirs = os.listdir(local_dir)
+        subdirs = [LocalGist.dir_name(gist)]
+        for subdir in subdirs:
             subdir = join(local_dir, subdir)
             if not isdir(subdir):
                 continue
