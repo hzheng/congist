@@ -8,13 +8,13 @@ import json
 import re
 import os
 import sys
-import string
-import unicodedata
 import importlib
 
 from os.path import basename, expanduser, isdir, join
 
 from congist.Gist import GistUser, Gist
+from congist.LocalAgent import LocalAgent
+from congist.LocalGist import LocalGist
 
 class Congist:
     LOCAL_BASE = 'local_base'
@@ -22,6 +22,7 @@ class Congist:
     INDEX_FILE = 'index_file'
     DISABLE_FILTER = '_disable_filter'
     AGENTS = 'agents'
+    LOCAL = 'local'
     REPOS = 'repos'
     HOST = 'host'
     USERS = 'users'
@@ -48,6 +49,7 @@ class Congist:
     def __init__(self, config):
         self._local_dirs = {}
         self._host_agents = {}
+        self._local_agents = {}
         self.default_host = None
         self._default_users = {}
         try:
@@ -83,7 +85,9 @@ class Congist:
             if host not in agent_types:
                 raise ConfigurationError("Host " + host + " not yet supported")
 
-            agents = self._host_agents[host] = {}
+            host_agents = self._host_agents[host] = {}
+            local_agents = self._local_agents[host] = {}
+            index_file = self._index_file.format(host=host)
             if not self.default_host:
                 self._default_host = host
             for user in settings[self.USERS]:
@@ -98,8 +102,11 @@ class Congist:
                 agent_module, agent_class = agent_types[host].split('.')
                 module = importlib.import_module(agent_module)
                 agent_type = getattr(module, agent_class)
-                index_file = self._index_file.format(host=host)
-                agents[username] = agent_type(gist_user=gist_user, index_file=index_file)
+                agent = agent_type(gist_user=gist_user)
+                host_agents[username] = agent
+                local_agents[username] = LocalAgent(remote_agent=agent,
+                                                    local_base=user_local_base,
+                                                    index_file=index_file)
             
             if host not in self._default_users:
                 raise ConfigurationError("Please set at least one user at " + host)
@@ -116,21 +123,21 @@ class Congist:
     def metadata_base(self):
         return self._metadata_base
 
-    def get_local_host_base(self, host, user):
-        return join(self.local_base, host, user)
+    def get_local_host_base(self, host, username):
+        return join(self.local_base, host, username)
 
-    def set_local_dir(self, host, user, path):
-        self._local_dirs[host + "." + user] = path
+    def set_local_dir(self, host, username, path):
+        self._local_dirs[host + "." + username] = path
 
-    def get_local_dir(self, host, user):
-        return self._local_dirs[host + "." + user]
+    def get_local_dir(self, host, username):
+        return self._local_dirs[host + "." + username]
 
     def _get_local_parent(self, gist):
-        return self.get_local_dir(gist.host, gist.user)
+        return self.get_local_dir(gist.host, gist.username)
 
-    def get_agents(self, host):
+    def get_agents(self, host, local=False):
         try:
-            return self._host_agents[host]
+            return (self._local_agents if local else self._host_agents)[host]
         except KeyError:
             raise ParameterError("Host " + host + " not yet supported")
 
@@ -155,7 +162,7 @@ class Congist:
         host = args[self.HOST]
         hosts = self.hosts if host is None else [host]
         for host in hosts:
-            agents = self.get_agents(host)
+            agents = self.get_agents(host, args[self.LOCAL])
             user = args[self.USER]
             users = [user] if user else self.get_users(host)
             for user in users:
@@ -220,14 +227,18 @@ class Congist:
 
     def get_files(self, **args):
         for gist in self.get_gists(**args):
-            for name, file in gist.files.items():
+            for name, file in gist.file_entries:
                 if self._match_filename(name.lower(), **args):
                     yield name, file.content
 
     def _match_filename(self, filename, **args):
+        filename = filename.lower()
+        name = args[self.FILE_NAME]
+        if name and name.lower() not in filename:
+            return False
         file_ext = args[self.FILE_EXT]
         if file_ext:
-            extensions = tuple(file_ext.split(','))
+            extensions = tuple(ext.lower() for ext in file_ext.split(','))
             if not filename.endswith(extensions):
                 return False
         elif not self._text_pattern.match(filename):
@@ -241,20 +252,11 @@ class Congist:
     def download_gists(self, **args):
         for gist in self.get_gists(**args):
             local_parent = self._get_local_parent(gist)
-            local_dir = join(local_parent, self._dir_name(gist))
+            local_dir = join(local_parent, LocalGist.dir_name(gist))
             if isdir(local_dir):
                 self._pull_gists(local_dir, **args)
             else:
                 self._clone_gists(gist, local_dir, **args)
-
-    VALID_FILENAME_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
-    def _clean_name(self, name):
-        cleaned = unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore')
-        return ''.join(chr(c) for c in cleaned if chr(c) in self.VALID_FILENAME_CHARS)
-
-    def _dir_name(self, gist):
-        name = self._clean_name(gist.title).replace(' ', '_')
-        return name + "_" + gist.id[:6]
 
     def _clone_gists(self, gist, local_dir, **args):
         if args[self.SSH]:

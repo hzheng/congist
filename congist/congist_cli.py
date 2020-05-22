@@ -30,7 +30,10 @@ def read_gists(congist, args):
     for filename, content in congist.get_files(**vars(args)):
         if args.verbose:
             print("====={}======".format(filename))
-        print(content, file=output)
+        if isinstance(content, str):
+            output.write(content)
+        else:
+            output.buffer.write(content)
 
 def _get_output(args):
     if args.output:
@@ -85,6 +88,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Construct your gists')
     parser.add_argument('-l', '--list', action='store_true',
                        help='list gists')
+    parser.add_argument('-L', '--local', action='store_true',
+                       help='get info from local instead of remote')
     parser.add_argument('-i', '--index', action='store_true',
                        help='print index of gists')
     parser.add_argument('-I', '--full-index', action='store_true',

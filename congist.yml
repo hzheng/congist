@@ -2,6 +2,7 @@ user_cfg_path: ~/.congist
 
 agents:
     github: GithubAgent.GithubAgent
+    #local: LocalAgent.LocalAgent
 
 local_base: $GIST_DATA
 

@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from congist.Gist import Gist
-
 """
 Gist represents a Github gist.
 """
+
+from congist.Gist import Gist, GistFile
 
 class GithubGist(Gist):
     # assume gist is github.Gist.Gist object(temporarily)
     def __init__(self, gist, username):
         self._gist = gist
-        super().__init__(gist, username)
+        super().__init__(username)
 
     @property
     def id(self):
@@ -45,8 +45,9 @@ class GithubGist(Gist):
         return self._gist.html_url
  
     @property
-    def files(self):
-        return self._gist.files
+    def file_entries(self):
+        for name, f in self._gist.files.items():
+            yield name, GistFile(name=name, content=f.content, url=f.raw_url) 
     
     @property
     def created(self):

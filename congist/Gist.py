@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import re
+from collections import namedtuple
+
 
 """
 GistUser represents a gist user.
 """
 
-from collections import namedtuple
 GistUser = namedtuple('GistUser', ['username', 'access_token'])
+
+"""
+GistFile represents a gist file.
+"""
+
+GistFile = namedtuple('GistFile', ['name', 'content', 'url'])
 
 
 """
@@ -27,7 +34,7 @@ class Gist:
         Gist._desc_pattern = re.compile(config[Gist.DESC_SPLIT])
         Gist._desc_format = config[Gist.DESC_JOIN]
 
-    def __init__(self, gist, username):
+    def __init__(self, username):
         self._username = username
 
         desc_dict = self._split_desc(self.description)
@@ -36,8 +43,8 @@ class Gist:
         self._tags = desc_dict[self.TAGS]
 
     def __repr__(self):
-        return 'user={user}; url={url}; description={description}; public={public}'.format(
-            user=self.user, url=self.api_url, description=self.description,
+        return 'username={username}; url={url}; description={description}; public={public}'.format(
+            username=self.username, url=self.api_url, description=self.description,
             public=self.public)
 
     def __str__(self):
@@ -46,7 +53,7 @@ class Gist:
             url=self.api_url, description=self.description, public=public)
 
     def get_info(self):
-        return {
+        return { # TODO: simplify
             'id': self.id,
             'description': self.description,
             'public': self.public,
@@ -54,7 +61,7 @@ class Gist:
             'created': self.created,
             'updated': self.updated,
             'url': self.api_url,
-            'files': { name : file.raw_url for name, file in self.files.items() }
+            'files': self.files
         }
 
     @property
@@ -63,7 +70,7 @@ class Gist:
         return type_name[:-4].lower()
 
     @property
-    def user(self):
+    def username(self):
         return self._username
 
     @property
@@ -99,7 +106,11 @@ class Gist:
     def html_url(self): ...
  
     @property
-    def files(self): ...
+    def files(self):
+        return {name: file.url for name, file in self.file_entries.items() }
+ 
+    @property
+    def file_entries(self): ...
     
     @property
     def created(self): ...
