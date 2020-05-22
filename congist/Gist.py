@@ -10,12 +10,6 @@ GistUser represents a gist user.
 
 GistUser = namedtuple('GistUser', ['username', 'access_token'])
 
-"""
-GistFile represents a gist file.
-"""
-
-GistFile = namedtuple('GistFile', ['name', 'content', 'url'])
-
 
 """
 Gist represents a generic gist class.

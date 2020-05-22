@@ -4,7 +4,8 @@
 Gist represents a Github gist.
 """
 
-from congist.Gist import Gist, GistFile
+from congist.Gist import Gist
+from congist.GistFile import GistFile
 
 class GithubGist(Gist):
     # assume gist is github.Gist.Gist object(temporarily)
@@ -47,7 +48,7 @@ class GithubGist(Gist):
     @property
     def file_entries(self):
         for name, f in self._gist.files.items():
-            yield name, GistFile(name=name, content=f.content, url=f.raw_url) 
+            yield GistFile(name=name, content=f.content, url=f.raw_url) 
     
     @property
     def created(self):

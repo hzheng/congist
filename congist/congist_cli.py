@@ -27,9 +27,10 @@ def index_gists(congist, args):
 
 def read_gists(congist, args):
     output = _get_output(args)
-    for filename, content in congist.get_files(**vars(args)):
+    for f in congist.get_files(**vars(args)):
+        content = f.content
         if args.verbose:
-            print("====={}======".format(filename))
+            print("====={}======".format(f.name))
         if isinstance(content, str):
             output.write(content)
         else:
@@ -112,6 +113,8 @@ def parse_args():
                        help='delete gists')
     parser.add_argument('-f', '--file-name',
                        help='specify file name')
+    parser.add_argument('-b', '--binary', action='store_true',
+                       help='including binary file')
     parser.add_argument('--force', action='store_true',
                        help='perform operations without confirmation')
     parser.add_argument('-o', '--output',

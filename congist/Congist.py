@@ -31,6 +31,7 @@ class Congist:
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
     FILE_EXT = 'file_extension'
+    BINARY = 'binary'
     TEXT = 'text'
     ID = 'id'
     PUBLIC = 'public'
@@ -227,9 +228,9 @@ class Congist:
 
     def get_files(self, **args):
         for gist in self.get_gists(**args):
-            for name, file in gist.file_entries:
-                if self._match_filename(name.lower(), **args):
-                    yield name, file.content
+            for f in gist.file_entries:
+                if self._match_filename(f.name, **args):
+                    yield f
 
     def _match_filename(self, filename, **args):
         filename = filename.lower()
@@ -241,7 +242,7 @@ class Congist:
             extensions = tuple(ext.lower() for ext in file_ext.split(','))
             if not filename.endswith(extensions):
                 return False
-        elif not self._text_pattern.match(filename):
+        elif not args[self.BINARY] and not self._text_pattern.match(filename):
             return False
         return True
 
