@@ -12,7 +12,7 @@ import importlib
 
 from os.path import basename, expanduser, isdir, join
 
-from congist.utils import String
+from congist.utils import String, File
 from congist.Gist import GistUser, Gist
 from congist.LocalAgent import LocalAgent
 from congist.LocalGist import LocalGist
@@ -347,20 +347,11 @@ class Congist:
         files = {}
         if paths:
             for path in paths:
-                self._set_content(files, expanduser(path))
+                files[basename(path)] = File.read(expanduser(path), True)[0]
         else:
-            self._set_content_from_stdin(files, **args)
+            filename = args[self.FILE_NAME] or self._default_filename
+            files[filename] = sys.stdin.read() # binary files may throw exception
         return agent.create_gist(files, public, desc)
-
-    def _set_content(self, files, path):
-        with open(path, 'r') as f: # TODO: use binary mode depends on file type
-            content = f.read()
-            files[basename(path)] = content
-
-    def _set_content_from_stdin(self, files, **args):
-        filename = args[self.FILE_NAME] or self._default_filename
-        content = sys.stdin.read()
-        files[filename] = content
 
 class ClientError(Exception):
     """Client-side error"""

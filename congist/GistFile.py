@@ -39,4 +39,4 @@ class GistFile:
 
     def _check_content(self):
         if self._content is None and self._path:
-            self._content, self._binary = File.get_content(self._path)
+            self._content, self._binary = File.read(self._path)

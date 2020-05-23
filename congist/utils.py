@@ -5,6 +5,8 @@ Utility functions
 """
 
 import unicodedata
+from os.path import basename
+from sys import stdin
 
 class String:
     @staticmethod
@@ -42,10 +44,14 @@ class Array:
 
 class File:
     @staticmethod
-    def get_content(path):
+    def read(path, str_only = False):
         try:
             with open(path, "r") as f:
                 return f.read(), False
         except UnicodeDecodeError as e:
             with open(path, "rb") as f:
-                return f.read(), True
+                # the following solution has defect
+                content = f.read()
+                if str_only:
+                    content = "".join(map(chr, content))
+                return content, True
