@@ -58,7 +58,9 @@ flags = (
     argument('-v', '--verbose', action='store_true',
              help='verbose output'),
     argument('-L', '--local-base',
-             help='specify local base directory'))
+             help='specify local base directory'),
+    argument('-S', '--case-sensitive', action='store_true',
+             help='case sensitive when match'))
 
 read_flags = (
     argument('-o', '--output',
@@ -100,7 +102,9 @@ filters = (
     argument('-i', '--id', nargs='+', 
              help='filter by gist IDs'),
     argument('-e', '--file-extension',
-             help='filter by the file name suffix(comma separated)'))
+             help='filter by the file name suffix(comma separated)'),
+    argument('-k', '--keyword',
+             help='filter by keyword(regex)'))
 
 @subcommand(*flags, *read_flags, *filters)
 def ls(congist, args):
@@ -124,7 +128,7 @@ def index(congist, args):
                      help='download gists only'),
             argument('-U', '--upload', action='store_true',
                      help='upload gists only'),
-            argument('-S', '--ssh', action='store_true',
+            argument('--ssh', action='store_true',
                      help='clone via SSH instead HTTPS'))
 def sync(congist, args):
     """Refresh/synchronize gists."""
@@ -134,10 +138,11 @@ def sync(congist, args):
         congist.upload_gists(**vars(args))
     else:
         congist.sync_gists(**vars(args))
+        congist.generate_full_index(**vars(args))
 
 @subcommand(*flags, *read_flags, *filters,
             argument('-b', '--binary', action='store_true',
-                     help='including binary file(default: text file only)'))
+                     help='including binary file(default: presetted text file extensions only)'))
 def read(congist, args):
     """Read filtered gists."""
     output = _get_output(args)

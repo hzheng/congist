@@ -12,6 +12,7 @@ import importlib
 
 from os.path import basename, expanduser, isdir, join
 
+from congist.utils import String
 from congist.Gist import GistUser, Gist
 from congist.LocalAgent import LocalAgent
 from congist.LocalGist import LocalGist
@@ -31,6 +32,7 @@ class Congist:
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
     FILE_EXT = 'file_extension'
+    KEYWORD = 'keyword'
     BINARY = 'binary'
     TEXT = 'text'
     ID = 'id'
@@ -46,6 +48,7 @@ class Congist:
     VERBOSE = 'verbose'
     DRY_RUN = 'dry_run'
     SSH = 'ssh'
+    CASE_SENSITIVE = 'case_sensitive'
 
     def __init__(self, config):
         self._local_dirs = {}
@@ -160,6 +163,12 @@ class Congist:
         return agents[username]
 
     def get_gists(self, **args):
+        yield from self._get_gists_or_files(False, **args)
+
+    def get_files(self, **args):
+        yield from self._get_gists_or_files(True, **args)
+
+    def _get_gists_or_files(self, need_file, **args):
         host = args[self.HOST]
         hosts = self.hosts if host is None else [host]
         local = args.get(self.LOCAL, False)
@@ -172,34 +181,37 @@ class Congist:
                     print("username", u) # TODO: change to callback
                 agent = self._get_agent(agents, u, self._exact)
                 for gist in agent.get_gists():
-                    if self._filter_gist(gist, **args):
-                        yield gist
+                    yield from self._filter_gist(gist, need_file, **args)
 
-    def _filter_gist(self, gist, **args):
+    def _filter_gist(self, gist, need_file, **args):
         if self.DISABLE_FILTER in args:
-            return True
+            yield gist
+            return
 
         gist_id = args[self.ID]
         if gist_id:
             if self._exact:
                 if  gist.id not in gist_id:
-                    return False
+                    return
             else:
                 if all(gid not in gist.id for gid in gist_id):
-                    return False
+                    return
         desc = args[self.DESC]
-        if desc and (gist.description is None or desc not in gist.description):
-            return False
+        if not String.contains(gist.description, desc, args[self.CASE_SENSITIVE]):
+            return
         tags = args[self.TAGS]
         if tags and not gist.has_tags(tags):
-            return False
+            return
         public = args[self.PUBLIC]
         if (public is False and gist.public) or (public and not gist.public):
-            return False
+            return
         star = args[self.STAR]
         if (star is False and gist.starred) or (star and not gist.starred):
-            return False
-        return True
+            return
+        if need_file or args[self.FILE_NAME] or args[self.FILE_EXT] or args[self.KEYWORD]:
+            yield from self._filter_file(gist, need_file, **args)
+        else:
+            yield gist
 
     def get_infos(self, **args):
         for gist in self.get_gists(**args):
@@ -226,23 +238,42 @@ class Congist:
         json_output = json.dumps(index, indent=4)
         print(json_output, file=file)
 
-    def get_files(self, **args):
-        for gist in self.get_gists(**args):
-            for f in gist.file_entries:
-                if self._match_filename(f.name, **args):
-                    yield f
+    def _filter_file(self, gist, need_file, **args):
+        for f in gist.file_entries:
+            if not self._match_filename(f.name, **args):
+                continue
+            if not self._match_keyword(f, **args):
+                continue
+            if need_file:
+                yield f
+            else:
+                yield gist
+                return
+
+    def _match_keyword(self, f, **args):
+        keyword = args[self.KEYWORD]
+        if not keyword:
+            return True
+
+        content = f.content
+        return isinstance(content, str) and String.contains(content, keyword, args[self.CASE_SENSITIVE])
 
     def _match_filename(self, filename, **args):
-        filename = filename.lower()
+        case_sensitive = args[self.CASE_SENSITIVE]
         name = args[self.FILE_NAME]
-        if name and name.lower() not in filename:
+        if not case_sensitive:
+            name = String.casefold(name)
+            filename = String.casefold(filename)
+        if not String.contains(filename, name, True):
             return False
+        
         file_ext = args[self.FILE_EXT]
         if file_ext:
-            extensions = tuple(ext.lower() for ext in file_ext.split(','))
+            extensions = tuple(ext if case_sensitive else String.casefold(ext)
+                               for ext in file_ext.split(','))
             if not filename.endswith(extensions):
                 return False
-        elif not args[self.BINARY] and not self._text_pattern.match(filename):
+        elif args.get(self.BINARY, None) == False and not self._text_pattern.match(filename):
             return False
         return True
 

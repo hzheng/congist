@@ -4,6 +4,8 @@
 GistFile represents a gist file.
 """
 
+from congist.utils import File
+
 class GistFile:
 
     def __init__(self, name, url, path=None, content=None):
@@ -11,6 +13,7 @@ class GistFile:
         self._content = content
         self._url = url
         self._path = path
+        self._binary = False
     
     @property
     def name(self):
@@ -26,7 +29,14 @@ class GistFile:
     
     @property
     def content(self):
-        if self._content is None and self._path:
-            with open(self._path, 'rb') as f:
-                self._content = f.read()
+        self._check_content()
         return self._content
+    
+    @property
+    def binary(self):
+        self._check_content()
+        return self._binary
+
+    def _check_content(self):
+        if self._content is None and self._path:
+            self._content, self._binary = File.get_content(self._path)
