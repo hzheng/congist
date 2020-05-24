@@ -36,11 +36,24 @@ class String:
     def casefold(text):
         return unicodedata.normalize("NFKD", text.casefold()) if text else text
 
+    @staticmethod
+    def match(text, keyword, case_sensitive=False):
+        if not isinstance(text, str):
+            return False
+        if not keyword:
+            return True
+
+        # return String.contains(text, keyword, case_sensitive)
+        flag = 0 if case_sensitive else re.IGNORECASE 
+        return re.search(keyword, text, flag | re.DOTALL | re.MULTILINE)
+
 class Array:
     @staticmethod
     def contains(arr, s, case_sensitive=False):
-        if s is None: return True
-        if arr is None: return False
+        if s is None:
+            return True
+        if arr is None:
+            return False
 
         if not case_sensitive:
             str1 = String.casefold(str1)
@@ -86,7 +99,8 @@ class Time:
     @staticmethod
     def _check(target_time, current_time, expression):
         matched = Time.FORMAT_PATTERN.match(expression)
-        if not matched: return False
+        if not matched:
+            return False
 
         num, unit, relative = matched.groups()
         time_key = Time.UNIT_MAP[unit or 'd']

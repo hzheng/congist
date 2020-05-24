@@ -262,11 +262,7 @@ class Congist:
 
     def _match_keyword(self, f, **args):
         keyword = args[self.KEYWORD]
-        if not keyword:
-            return True
-
-        content = f.content
-        return isinstance(content, str) and String.contains(content, keyword, args[self.CASE_SENSITIVE])
+        return String.match(f.content, keyword, args[self.CASE_SENSITIVE])
 
     def _match_filename(self, filename, **args):
         case_sensitive = args[self.CASE_SENSITIVE]
@@ -283,7 +279,7 @@ class Congist:
                                for ext in file_ext.split(','))
             if not filename.endswith(extensions):
                 return False
-        elif args.get(self.BINARY, None) == False and not self._text_pattern.match(filename):
+        elif not args.get(self.BINARY) and not self._text_pattern.match(filename):
             return False
         return True
 

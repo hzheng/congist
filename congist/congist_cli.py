@@ -104,7 +104,7 @@ filters = (
     argument('-e', '--file-extension',
              help='filter by the file name suffix(comma separated)'),
     argument('-k', '--keyword',
-             help='filter by keyword'),
+             help='filter by keyword(regex)'),
     argument('-c', '--created', nargs='+', 
              help='filter by created time'),
     argument('-m', '--modified', nargs='+',
