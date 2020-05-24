@@ -31,7 +31,6 @@ class Congist:
     FILE_TYPE = 'file_type'
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
-    FILE_EXT = 'file_extension'
     KEYWORD = 'keyword'
     CREATED = 'created'
     MODIFIED = 'modified'
@@ -199,7 +198,7 @@ class Congist:
                 if all(gid not in gist.id for gid in gist_id):
                     return
         desc = args[self.DESC]
-        if not String.contains(gist.description, desc, args[self.CASE_SENSITIVE]):
+        if not String.match(gist.description, desc, args[self.CASE_SENSITIVE]):
             return
         tags = args[self.TAGS]
         if tags and not gist.has_tags(tags):
@@ -218,7 +217,7 @@ class Congist:
         if modified:
             if not Time.check(gist.updated, modified):
                 return
-        if need_file or args[self.FILE_NAME] or args[self.FILE_EXT] or args[self.KEYWORD]:
+        if need_file or args[self.FILE_NAME] or args[self.KEYWORD]:
             yield from self._filter_file(gist, need_file, **args)
         else:
             yield gist
@@ -265,21 +264,9 @@ class Congist:
         return String.match(f.content, keyword, args[self.CASE_SENSITIVE])
 
     def _match_filename(self, filename, **args):
-        case_sensitive = args[self.CASE_SENSITIVE]
-        name = args[self.FILE_NAME]
-        if not case_sensitive:
-            name = String.casefold(name)
-            filename = String.casefold(filename)
-        if not String.contains(filename, name, True):
+        if not String.match(filename, args[self.FILE_NAME], args[self.CASE_SENSITIVE]):
             return False
-        
-        file_ext = args[self.FILE_EXT]
-        if file_ext:
-            extensions = tuple(ext if case_sensitive else String.casefold(ext)
-                               for ext in file_ext.split(','))
-            if not filename.endswith(extensions):
-                return False
-        elif not args.get(self.BINARY) and not self._text_pattern.match(filename):
+        if not args.get(self.BINARY) and not self._text_pattern.match(filename):
             return False
         return True
 

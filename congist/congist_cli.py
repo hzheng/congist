@@ -31,7 +31,7 @@ def _confirm(gist, action):
 
 #############Command Argument Parse#############
 parser = ArgumentParser(description='Construct your gists')
-subparsers = parser.add_subparsers(dest="subcommand")
+subparsers = parser.add_subparsers(dest='subcommand')
 
 def argument(*args, **kwargs):
     return (list(args), kwargs)
@@ -57,13 +57,15 @@ def str2bool(v):
 flags = (
     argument('-v', '--verbose', action='store_true',
              help='verbose output'),
-    argument('-L', '--local-base',
+    argument('-L', '--local-base', metavar='path',
              help='specify local base directory'),
+    argument('-E', '--exact', action='store_true',
+             help='enforce exact match'),
     argument('-S', '--case-sensitive', action='store_true',
              help='case sensitive when match'))
 
 read_flags = (
-    argument('-o', '--output',
+    argument('-o', '--output', metavar='path',
              help='specify output file'),
     argument('-l', '--local', action='store_true',
              help='get info from local instead of remote'))
@@ -75,39 +77,35 @@ update_flags = (
              help='perform operations without confirmation'))
 
 user_specifiers = (
-    argument('-H', '--host',
-             help='specify host'),
-    argument('-u', '--user',
+    argument('-H', '--host', metavar='hostname',
+             help='specify host name'),
+    argument('-u', '--user', metavar='user',
              help='specify user'))
 
 specifiers = (
     *user_specifiers,
-    argument('-E', '--exact', nargs='?', const=True,
-             help='enforce exact match'),
-    argument('-p', '--public', nargs='?', 
+    argument('-p', '--public', nargs='?', metavar='bool', 
              type=str2bool, default=None,
              help='specify public gists(1=public, 0=private)'),
-    argument('-s', '--star', nargs='?', 
+    argument('-s', '--star', nargs='?', metavar='bool', 
              type=str2bool, default=None,
              help='specify starred gists(1=starred, 0=unstarred)'),
-    argument('-t', '--tags', nargs='+',
+    argument('-t', '--tags', nargs='+', metavar='tag',
              help='specify gist tags'),
-    argument('-d', '--description',
-             help='specify gist description'),
-    argument('-f', '--file-name',
-             help='specify file name'))
+    argument('-d', '--description', metavar='description-or-pattern',
+             help='specify gist description or pattern(regex)'),
+    argument('-f', '--file-name', metavar='name-or-pattern',
+             help='specify gist file name or pattern(regex)'))
 
 filters = (
     *specifiers,
-    argument('-i', '--id', nargs='+', 
+    argument('-i', '--id', nargs='+', metavar='gist-id',
              help='filter by gist IDs'),
-    argument('-e', '--file-extension',
-             help='filter by the file name suffix(comma separated)'),
-    argument('-k', '--keyword',
-             help='filter by keyword(regex)'),
-    argument('-c', '--created', nargs='+', 
+    argument('-k', '--keyword', metavar='regex',
+             help='filter by keyword'),
+    argument('-c', '--created', metavar='created-date', nargs='+', 
              help='filter by created time'),
-    argument('-m', '--modified', nargs='+',
+    argument('-m', '--modified', metavar='modified-date', nargs='+',
              help='filter by modified time'))
 
 @subcommand(*flags, *read_flags, *filters)
@@ -177,7 +175,7 @@ def tag(congist, args):
     """Get or set tags for filtered gists."""
     for gist in congist.get_gists(**vars(args)):
         if not args.new_tags:
-            print(",".join(gist.tags) if gist.tags else "(no tags)")
+            print(','.join(gist.tags) if gist.tags else "(no tags)")
         elif args.force or _confirm(gist, "set tag"):
             gist.set_tags(args.new_tags)
 
