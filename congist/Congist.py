@@ -12,7 +12,7 @@ import importlib
 
 from os.path import basename, expanduser, isdir, join
 
-from congist.utils import String, File
+from congist.utils import String, File, Time
 from congist.Gist import GistUser, Gist
 from congist.LocalAgent import LocalAgent
 from congist.LocalGist import LocalGist
@@ -33,6 +33,8 @@ class Congist:
     DEFAULT_FILENAME = 'default_filename'
     FILE_EXT = 'file_extension'
     KEYWORD = 'keyword'
+    CREATED = 'created'
+    MODIFIED = 'modified'
     BINARY = 'binary'
     TEXT = 'text'
     ID = 'id'
@@ -208,6 +210,14 @@ class Congist:
         star = args[self.STAR]
         if (star is False and gist.starred) or (star and not gist.starred):
             return
+        created = args[self.CREATED]
+        if created:
+            if not Time.check(gist.created, created):
+                return
+        modified = args[self.MODIFIED]
+        if modified:
+            if not Time.check(gist.updated, modified):
+                return
         if need_file or args[self.FILE_NAME] or args[self.FILE_EXT] or args[self.KEYWORD]:
             yield from self._filter_file(gist, need_file, **args)
         else:

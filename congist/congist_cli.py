@@ -104,7 +104,11 @@ filters = (
     argument('-e', '--file-extension',
              help='filter by the file name suffix(comma separated)'),
     argument('-k', '--keyword',
-             help='filter by keyword(regex)'))
+             help='filter by keyword'),
+    argument('-c', '--created', nargs='+', 
+             help='filter by created time'),
+    argument('-m', '--modified', nargs='+',
+             help='filter by modified time'))
 
 @subcommand(*flags, *read_flags, *filters)
 def ls(congist, args):

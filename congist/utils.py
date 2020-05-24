@@ -4,7 +4,12 @@
 Utility functions
 """
 
+import re
 import unicodedata
+import dateutil.parser
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
+
 from os.path import basename
 from sys import stdin
 
@@ -55,3 +60,41 @@ class File:
                 if str_only:
                     content = "".join(map(chr, content))
                 return content, True
+
+class Time:
+
+    FORMAT_PATTERN = re.compile('^(\d+)(y|M|d|h|m|s)?([+-])?$')
+    UNIT_MAP = {
+        'y': 'years',
+        'M': 'months',
+        'd': 'days',
+        'h': 'hours',
+        'm': 'minutes',
+        's': 'seconds'
+    }
+
+    @staticmethod
+    def check(time, expressions):
+        """check if the given time satisfies all experssion."""
+        target_time = dateutil.parser.isoparse(time)
+        current_time = datetime.now()
+        for expr in expressions:
+            if not Time._check(target_time, current_time, expr):
+                return False
+        return True
+    
+    @staticmethod
+    def _check(target_time, current_time, expression):
+        matched = Time.FORMAT_PATTERN.match(expression)
+        if not matched: return False
+
+        num, unit, relative = matched.groups()
+        time_key = Time.UNIT_MAP[unit or 'd']
+        src_time = current_time - relativedelta(**{time_key: int(num)})
+        if relative == '+':
+            return src_time > target_time
+        if relative == '-':
+            return src_time < target_time
+        
+        diff = abs(src_time - target_time)
+        return diff < timedelta(**{time_key : 1})
