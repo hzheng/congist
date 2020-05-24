@@ -28,6 +28,7 @@ class Congist:
     HOST = 'host'
     USERS = 'users'
     USER = 'user'
+    GIST = 'gist'
     FILE_TYPE = 'file_type'
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
@@ -60,7 +61,7 @@ class Congist:
         try:
             agent_types = self._read_config(config)
             self._set_agents(agent_types)
-            Gist.init(config)
+            Gist.init(config[self.GIST])
         except KeyError as e:
             raise ConfigurationError(e)
 
@@ -222,9 +223,9 @@ class Congist:
         else:
             yield gist
 
-    def get_infos(self, **args):
+    def get_attrs(self, **args):
         for gist in self.get_gists(**args):
-            yield gist.get_info() 
+            yield gist.get_attrs() 
 
     def generate_full_index(self, **args):
         args = args.copy()
@@ -243,7 +244,7 @@ class Congist:
             host = self._default_host
         index = {u: [] for u in self.get_users(host)}
         for gist in self.get_gists(**args):
-            index[gist.username].append(gist.get_info())
+            index[gist.username].append(gist.get_attrs())
         json_output = json.dumps(index, indent=4)
         print(json_output, file=file)
 

@@ -12,13 +12,11 @@ import yaml
 from argparse import ArgumentParser, ArgumentTypeError
 import json
 
-from congist.Congist import Congist, ConfigurationError, ParameterError
+from congist.Congist import Congist, Gist, ConfigurationError, ParameterError
 
 
 def _get_output(args):
-    if args.output:
-        return open(expanduser(args.output), 'w')
-    return sys.stdout
+    return open(expanduser(args.output), 'w') if args.output else sys.stdout
 
 
 def _confirm(gist, action):
@@ -108,12 +106,27 @@ filters = (
     argument('-m', '--modified', metavar='modified-date', nargs='+',
              help='filter by modified time'))
 
-@subcommand(*flags, *read_flags, *filters)
+gist_default_format = "adp"
+
+def format_help():
+    help = ""
+    for k, v in Gist.format_map().items():
+        help += k + ": " + v + "\n"
+    return help + "empty: all of above, default: " + gist_default_format
+
+@subcommand(*flags, *read_flags, *filters,
+            argument('-F', '--format', metavar='format', nargs="?",
+                     default=gist_default_format,
+                     help="format of list (" + format_help() + ")"))
 def ls(congist, args):
-    """List all filtered gists."""
+    """List all filtered gists with the given format."""
     output = _get_output(args)
-    for gist in congist.get_gists(**vars(args)):
-        print(gist, file=output)
+    format = args.format
+    try:
+        for gist in congist.get_gists(**vars(args)):
+            print(gist.get_info(format), file=output)
+    except KeyError as e:
+        raise ParameterError("unsupported format: {}\n{}".format(e, format_help()))
 
 @subcommand(*flags, *read_flags, *filters)
 def info(congist, args):

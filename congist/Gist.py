@@ -22,11 +22,29 @@ class Gist:
     SUBTITLE = 'subtitle'
     DESC_SPLIT = 'desc_split'
     DESC_JOIN = 'desc_join'
+    DESC_JOIN = 'desc_join'
+    ATTRS = [
+        'api_url',
+        'description',
+        'public',
+        'starred',
+        'created',
+        'updated',
+        'id',
+        'files'
+    ]
+    _format_map = None
 
     @staticmethod
     def init(config):
         Gist._desc_pattern = re.compile(config[Gist.DESC_SPLIT])
         Gist._desc_format = config[Gist.DESC_JOIN]
+
+    @staticmethod
+    def format_map():
+        if not Gist._format_map:
+            Gist._format_map = {v[0] : v for v in Gist.ATTRS}
+        return Gist._format_map
 
     def __init__(self, username):
         self._username = username
@@ -42,21 +60,31 @@ class Gist:
             public=self.public)
 
     def __str__(self):
-        public = 'public' if self.public else 'secret'
-        return '{url} {description} ({public})'.format(
-            url=self.api_url, description=self.description, public=public)
+        return self.get_info("adp")
 
-    def get_info(self):
-        return { # TODO: simplify
-            'id': self.id,
-            'description': self.description,
-            'public': self.public,
-            'starred': self.starred,
-            'created': self.created,
-            'updated': self.updated,
-            'url': self.api_url,
-            'files': self.files
-        }
+    def get_info(self, format=None):
+        attrs = self.get_attrs(format)
+        if 'public' in attrs:
+            attrs['public'] = '+' if self.public else '-'
+        if 'starred' in attrs:
+            attrs['starred'] = '*' if self.starred else '.'
+        if 'description' in attrs:
+            attrs['description'] = '"' + self.description + '"'
+        files = attrs.pop('files', None)
+        info = " ".join(attrs.values())
+        if files:
+            if info:
+                info += "\n"
+            info += "\n".join(files.values())
+        return info
+
+    def get_attrs(self, format=None):
+        attrs = {}
+        fmt_map = self.format_map()
+        for f in (format or list(fmt_map.keys())):
+            key = fmt_map[f]
+            attrs[key] = getattr(self, key)
+        return attrs
 
     @property
     def host(self):
