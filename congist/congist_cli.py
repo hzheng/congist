@@ -13,7 +13,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 import json
 
 from congist.Congist import Congist, Gist, ConfigurationError, ParameterError
-
+from congist import __version__
 
 def _get_output(args):
     return open(expanduser(args.output), 'w') if args.output else sys.stdout
@@ -230,6 +230,10 @@ def rm(congist, args):
         if args.force or _confirm(gist, "delete"):
             gist.delete()
 
+@subcommand()
+def version(congist, args):
+    """Show the version of Congist."""
+    print(__version__)
 
 def main(argv=None):
     # read command args
