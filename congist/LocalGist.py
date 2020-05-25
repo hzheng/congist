@@ -13,15 +13,9 @@ from congist.Gist import Gist
 from congist.GistFile import GistFile
 
 class LocalGist(Gist):
-    def __init__(self, obj, username, local_base):
-        self._id = obj['id']
-        self._description = obj['description']
-        self._url = obj['url']
-        self._public = obj['public']
-        self._starred = obj['starred']
-        self._created = obj['created']
-        self._updated = obj['updated']
-        self._files = obj['files']
+    def __init__(self, values, username, local_base):
+        for attr in self.ATTRS:
+            setattr(self, "_" + attr, values[attr])
         self._local_base = local_base
         super().__init__(username)
 
@@ -43,7 +37,7 @@ class LocalGist(Gist):
  
     @property
     def api_url(self):
-        return self._url
+        return self._api_url
  
     @property
     def file_entries(self):

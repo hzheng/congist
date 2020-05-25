@@ -31,6 +31,7 @@ class Gist:
         'created',
         'updated',
         'id',
+        'tags',
         'files'
     ]
     _format_map = None
@@ -52,7 +53,7 @@ class Gist:
         desc_dict = self._split_desc(self.description)
         self._title = desc_dict[self.TITLE]
         self._subtitle = desc_dict[self.SUBTITLE]
-        self._tags = desc_dict[self.TAGS]
+        self._tags = sorted(desc_dict[self.TAGS])
 
     def __repr__(self):
         return 'username={username}; url={url}; description={description}; public={public}'.format(
@@ -70,8 +71,13 @@ class Gist:
             attrs['starred'] = '*' if self.starred else '.'
         if 'description' in attrs:
             attrs['description'] = '"' + self.description + '"'
+        tags = attrs.pop('tags', None)
         files = attrs.pop('files', None)
         info = " ".join(attrs.values())
+        if tags:
+            info += " #["
+            info += ",".join(tags)
+            info += "]"
         if files:
             if info:
                 info += "\n"

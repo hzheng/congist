@@ -262,7 +262,7 @@ class Congist:
 
     def _match_keyword(self, f, **args):
         keyword = args[self.KEYWORD]
-        return String.match(f.content, keyword, args[self.CASE_SENSITIVE])
+        return not keyword or String.match(f.content, keyword, args[self.CASE_SENSITIVE])
 
     def _match_filename(self, filename, **args):
         if not String.match(filename, args[self.FILE_NAME], args[self.CASE_SENSITIVE]):
