@@ -189,14 +189,19 @@ def desc(congist, args):
         if args.force or _confirm(gist, "set description"):
             gist.set_description(args.new_desc)
 
-@subcommand(argument('new_tags', metavar='tag', nargs='+',
+@subcommand(argument('new_tags', metavar='tag', nargs='*',
                      help='new gist tags'),
-            *sys_flags, *write_options, *file_filters)
+            *sys_flags, *read_options, *write_options, *file_filters)
 def tag(congist, args):
-    """Set tags for filtered gists."""
-    for gist in congist.get_gists(**vars(args)):
-        if args.force or _confirm(gist, "set tag"):
-            gist.set_tags(args.new_tags)
+    """Set/get tags for filtered gists"""
+    if args.new_tags:
+        for gist in congist.get_gists(**vars(args)):
+            if args.force or _confirm(gist, "set tag"):
+                gist.set_tags(args.new_tags)
+    else:
+        tags = congist.list_tags(**vars(args))
+        print(", ".join(tags), file=_get_output(args))
+        
 
 @subcommand(argument('new_star', nargs='?', metavar='bool',
                      type=str2bool, default=None,

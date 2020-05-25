@@ -227,6 +227,12 @@ class Congist:
         for gist in self.get_gists(**args):
             yield gist.get_attrs() 
 
+    def list_tags(self, **args):
+        tags = set()
+        for gist in self.get_gists(**args):
+            tags.update(gist.tags)
+        return sorted(tags)
+
     def generate_full_index(self, **args):
         args = args.copy()
         args.update({self.USER: None, self.DISABLE_FILTER: True})
