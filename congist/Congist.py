@@ -335,7 +335,7 @@ class Congist:
         agent = self._get_agent(agents, username, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
-        is_binary = False # TODO
+        is_binary = False # TODO: args[self.BINARY]
         filename = args[self.FILE_NAME] or self._default_filename
         files = File.file_map(paths, filename, is_binary)
         return agent.create_gist(desc, files, public)

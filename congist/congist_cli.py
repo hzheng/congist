@@ -108,6 +108,8 @@ gist_filters = (
 
 file_specifiers = (
     *gist_specifiers,
+    argument('-b', '--binary', action='store_true',
+             help='specify binary file or include binary file in search'),
     argument('-f', '--file-name', metavar='NAME-OR-PATTERN',
              help='specify gist file name or pattern(regex)'))
 
@@ -115,9 +117,7 @@ file_filters = (
     *file_specifiers,
     *gist_filters,
     argument('-k', '--keyword', metavar='REGEX',
-             help='filter by keyword'),
-    argument('-b', '--binary', action='store_true',
-             help='including binary file'))
+             help='filter by keyword'))
 
 gist_default_format = "adp"
 

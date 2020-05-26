@@ -8,7 +8,7 @@ import re
 import unicodedata
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from os.path import basename, expanduser
 from sys import stdin
@@ -110,7 +110,7 @@ class Time:
     def check(time, expressions):
         """check if the given time satisfies all experssion."""
         target_time = dateutil.parser.isoparse(time)
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc).replace(tzinfo=None)
         for expr in expressions:
             if not Time._check(target_time, current_time, expr):
                 return False
