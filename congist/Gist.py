@@ -81,7 +81,7 @@ class Gist:
         if files:
             if info:
                 info += "\n"
-            info += "\n".join(files.values())
+            info += "\n".join([f['url'] for f in files.values()])
         return info
 
     def get_attrs(self, format=None):
@@ -135,7 +135,7 @@ class Gist:
  
     @property
     def files(self):
-        return {f.name: f.url for f in self.file_entries }
+        return {f.name: f.attrs for f in self.file_entries }
  
     @property
     def file_entries(self): ...
@@ -184,3 +184,5 @@ class Gist:
         if not desc[self.TITLE]: # skip empty title
             joined = joined[joined.find(' ') + 1:]
         return joined
+    
+    def get_content(self, gist_file): ...

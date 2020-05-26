@@ -9,6 +9,8 @@ import unicodedata
 
 from os.path import join
 
+from congist.utils import File
+
 from congist.Gist import Gist
 from congist.GistFile import GistFile
 
@@ -41,9 +43,9 @@ class LocalGist(Gist):
  
     @property
     def file_entries(self):
-        for name, url in self._files.items():
+        for name, file_entry in self._files.items():
             path = join(self.local_base, self.dir_name(self), name)
-            yield GistFile(name=name, path=path, url=url) 
+            yield GistFile(self, file_entry, path=path) 
 
     @property
     def created(self):
@@ -56,6 +58,10 @@ class LocalGist(Gist):
     @property
     def starred(self):
         return self._starred
+ 
+    def get_content(self, gist_file):
+        assert isinstance(gist_file, GistFile), gist_file
+        return File.read(gist_file.path, gist_file.binary)
 
     @staticmethod
     def dir_name(gist):

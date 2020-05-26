@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Github agent.
+GithubAgent represents a Github agent.
 """
 
-from github import Github, InputFileContent
-
-from congist.GithubGist import GithubGist
+from congist.GithubSession import GithubSession
 
 class GithubAgent:
+    BASE_URL = "https://api.github.com"
 
     def __init__(self, gist_user):
-        github = Github(gist_user.access_token)
-        self._gist_user = gist_user
-        self._user = github.get_user()
+        self._session = GithubSession(gist_user, self.BASE_URL)
 
     @property
     def host(self):
@@ -22,14 +19,10 @@ class GithubAgent:
  
     @property
     def username(self):
-        return self._gist_user.username
+        return self._session.username
 
     def get_gists(self):
-        for gist in self._user.get_gists():
-            yield GithubGist(gist, self.username)
+        yield from self._session.get_gists()
 
-    def create_gist(self, contents, public, desc):
-        files = { filename : InputFileContent(content)
-                  for (filename, content) in contents.items()}
-        gist = self._user.create_gist(public, files, desc)
-        return GithubGist(gist, self.username)
+    def create_gist(self, desc, files, public):
+        return self._session.create_gist(desc, files, public)

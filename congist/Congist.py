@@ -10,7 +10,7 @@ import os
 import sys
 import importlib
 
-from os.path import basename, expanduser, isdir, join
+from os.path import expanduser, isdir, join
 
 from congist.utils import String, File, Time
 from congist.Gist import GistUser, Gist
@@ -29,14 +29,13 @@ class Congist:
     USERS = 'users'
     USER = 'user'
     GIST = 'gist'
-    FILE_TYPE = 'file_type'
     FILE_NAME = 'file_name'
     DEFAULT_FILENAME = 'default_filename'
     KEYWORD = 'keyword'
     CREATED = 'created'
     MODIFIED = 'modified'
     BINARY = 'binary'
-    TEXT = 'text'
+    FILE = 'file'
     ID = 'id'
     PUBLIC = 'public'
     STAR = 'star'
@@ -62,6 +61,7 @@ class Congist:
             agent_types = self._read_config(config)
             self._set_agents(agent_types)
             Gist.init(config[self.GIST])
+            File.init(config[self.FILE])
         except KeyError as e:
             raise ConfigurationError(e)
 
@@ -72,8 +72,6 @@ class Congist:
         self._local_base = local_base
         self._metadata_base = join(local_base, config[self.METADATA_BASE])
         self._index_file = join(self._metadata_base, config[self.INDEX_FILE])
-        file_type = config[self.FILE_TYPE]
-        self._text_pattern = re.compile(file_type[self.TEXT])
         commit = config[self.COMMIT]
         self._commit_command = commit[self.COMMAND]
         self._commit_message = commit[self.MESSAGE]
@@ -165,12 +163,12 @@ class Congist:
         return agents[username]
 
     def get_gists(self, **args):
-        yield from self._get_gists_or_files(False, **args)
+        yield from self.get_gists_or_files(False, **args)
 
     def get_files(self, **args):
-        yield from self._get_gists_or_files(True, **args)
+        yield from self.get_gists_or_files(True, **args)
 
-    def _get_gists_or_files(self, need_file, **args):
+    def get_gists_or_files(self, is_file, **args):
         host = args[self.HOST]
         hosts = self.hosts if host is None else [host]
         local = args.get(self.LOCAL, False)
@@ -183,9 +181,9 @@ class Congist:
                     print("username", u) # TODO: change to callback
                 agent = self._get_agent(agents, u, self._exact)
                 for gist in agent.get_gists():
-                    yield from self._filter_gist(gist, need_file, **args)
+                    yield from self._filter_gist(gist, is_file, **args)
 
-    def _filter_gist(self, gist, need_file, **args):
+    def _filter_gist(self, gist, is_file, **args):
         if self.DISABLE_FILTER in args:
             yield gist
             return
@@ -218,8 +216,8 @@ class Congist:
         if modified:
             if not Time.check(gist.updated, modified):
                 return
-        if need_file or args[self.FILE_NAME] or args[self.KEYWORD]:
-            yield from self._filter_file(gist, need_file, **args)
+        if is_file or args[self.FILE_NAME] or args[self.KEYWORD]:
+            yield from self._filter_file(gist, is_file, **args)
         else:
             yield gist
 
@@ -254,28 +252,21 @@ class Congist:
         json_output = json.dumps(index, indent=4)
         print(json_output, file=file)
 
-    def _filter_file(self, gist, need_file, **args):
+    def _filter_file(self, gist, is_file, **args):
+        binary = args.get(self.BINARY)
         for f in gist.file_entries:
-            if not self._match_filename(f.name, **args):
+            if not String.match(f.name, args[self.FILE_NAME], args[self.CASE_SENSITIVE]):
                 continue
-            if not self._match_keyword(f, **args):
+            if f.binary and not binary:
                 continue
-            if need_file:
+            keyword = args[self.KEYWORD]
+            if keyword and (f.binary or not String.match(f.content, keyword, args[self.CASE_SENSITIVE])):
+                continue
+            if is_file:
                 yield f
             else:
                 yield gist
                 return
-
-    def _match_keyword(self, f, **args):
-        keyword = args[self.KEYWORD]
-        return not keyword or String.match(f.content, keyword, args[self.CASE_SENSITIVE])
-
-    def _match_filename(self, filename, **args):
-        if not String.match(filename, args[self.FILE_NAME], args[self.CASE_SENSITIVE]):
-            return False
-        if not args.get(self.BINARY) and not self._text_pattern.match(filename):
-            return False
-        return True
 
     def sync_gists(self, **args):
         self.download_gists(**args)
@@ -333,7 +324,7 @@ class Congist:
             else:
                 os.system(cmd)
 
-    def create_gists(self, paths, **args):
+    def create_gist(self, paths, **args):
         host = args[self.HOST]
         if host is None:
             host = self._default_host
@@ -344,14 +335,10 @@ class Congist:
         agent = self._get_agent(agents, username, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
-        files = {}
-        if paths:
-            for path in paths:
-                files[basename(path)] = File.read(expanduser(path), True)[0]
-        else:
-            filename = args[self.FILE_NAME] or self._default_filename
-            files[filename] = sys.stdin.read() # binary files may throw exception
-        return agent.create_gist(files, public, desc)
+        is_binary = False # TODO
+        filename = args[self.FILE_NAME] or self._default_filename
+        files = File.file_map(paths, filename, is_binary)
+        return agent.create_gist(desc, files, public)
 
 class ClientError(Exception):
     """Client-side error"""

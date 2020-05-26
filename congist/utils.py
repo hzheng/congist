@@ -10,7 +10,7 @@ import dateutil.parser
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
 
-from os.path import basename
+from os.path import basename, expanduser
 from sys import stdin
 
 class String:
@@ -61,21 +61,41 @@ class Array:
         return str2 in str1 
 
 class File:
+    TEXT_PATTERN = 'text-pattern'
+
     @staticmethod
-    def read(path, str_only = False):
-        try:
-            with open(path, "r") as f:
-                return f.read(), False
-        except UnicodeDecodeError as e:
-            with open(path, "rb") as f:
-                # the following solution has defect
-                content = f.read()
-                if str_only:
-                    content = "".join(map(chr, content))
-                return content, True
+    def init(config):
+        text_pattern = config[File.TEXT_PATTERN]
+        File.TEXT_PATTERN = re.compile(text_pattern)
+
+    @staticmethod
+    def is_binary(filename, content_type):
+        if content_type.startswith('text'):
+            return False
+        return not File.TEXT_PATTERN.match(filename)
+
+    @staticmethod
+    def read(path, is_binary=False):
+        if path:
+            with open(expanduser(path), 'rb' if is_binary else 'r') as f:
+                return f.read()
+        else:
+            if is_binary:
+                return stdin.buffer.read()
+            return stdin.read()
+
+    @staticmethod
+    def file_map(paths, filename, is_binary=False):
+        files = {}
+        key = 'content'
+        if paths:
+            for path in paths:
+                files[basename(path)] = {key: File.read(path, is_binary)}
+        else:
+            files[filename] = {key: File.read(None, is_binary)}
+        return files
 
 class Time:
-
     FORMAT_PATTERN = re.compile('^(\d+)(y|M|d|h|m|s)?([+-])?$')
     UNIT_MAP = {
         'y': 'years',

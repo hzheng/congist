@@ -14,13 +14,15 @@ import json
 
 from congist.Congist import Congist, Gist, ConfigurationError, ParameterError
 from congist import __version__
+from congist.utils import File
 
 def _get_output(args):
     return open(expanduser(args.output), 'w') if args.output else sys.stdout
 
 
-def _confirm(gist, action):
-    reply = input("{} gist {}? (y/Y for yes) : ".format(action, gist))
+def _confirm(gist, action, is_file=False):
+    reply = input("{} {} {}? (y/Y for yes) : "
+                  .format(action, "file" if is_file else "gist", gist))
     if reply.lower() == 'y':
         return True
     else:
@@ -55,7 +57,7 @@ def str2bool(v):
 sys_flags = (
     argument('-v', '--verbose', action='store_true',
              help='verbose output'),
-    argument('-L', '--local-base', metavar='path',
+    argument('-L', '--local-base', metavar='PATH',
              help='specify local base directory'))
 
 filter_flags = (
@@ -65,7 +67,7 @@ filter_flags = (
              help='case sensitive when match'))
 
 read_options = (
-    argument('-o', '--output', metavar='path',
+    argument('-o', '--output', metavar='PATH',
              help='specify output file'),
     argument('-l', '--local', action='store_true',
              help='get info from local instead of remote'))
@@ -77,45 +79,45 @@ write_options = (
              help='perform operations without confirmation'))
 
 user_specifiers = (
-    argument('-H', '--host', metavar='hostname',
+    argument('-H', '--host', metavar='HOSTNAME',
              help='specify host name'),
-    argument('-u', '--user', metavar='user',
+    argument('-u', '--user', metavar='USERNAME',
              help='specify user'))
 
 gist_specifiers = (
     *user_specifiers,
-    argument('-p', '--public', nargs='?', metavar='bool', 
+    argument('-p', '--public', nargs='?', metavar='BOOL', 
              type=str2bool, default=None,
              help='specify public gists(1=public, 0=private)'),
-    argument('-s', '--star', nargs='?', metavar='bool', 
+    argument('-s', '--star', nargs='?', metavar='BOOL', 
              type=str2bool, default=None,
              help='specify starred gists(1=starred, 0=unstarred)'),
-    argument('-t', '--tags', nargs='+', metavar='tag',
+    argument('-t', '--tags', nargs='+', metavar='TAG',
              help='specify gist tags'),
-    argument('-d', '--description', metavar='description-or-pattern',
+    argument('-d', '--description', metavar='DESCRIPTION-OR-PATTERN',
              help='specify gist description or pattern(regex)'))
 
 gist_filters = (
     *filter_flags,
-    argument('-i', '--id', nargs='+', metavar='gist-id',
+    argument('-i', '--id', nargs='+', metavar='GIST-ID',
              help='filter by gist IDs'),
-    argument('-c', '--created', metavar='created-date', nargs='+', 
+    argument('-c', '--created', metavar='DATE', nargs='+', 
              help='filter by created time'),
-    argument('-m', '--modified', metavar='modified-date', nargs='+',
+    argument('-m', '--modified', metavar='DATE', nargs='+',
              help='filter by modified time'))
 
 file_specifiers = (
     *gist_specifiers,
-    argument('-f', '--file-name', metavar='name-or-pattern',
+    argument('-f', '--file-name', metavar='NAME-OR-PATTERN',
              help='specify gist file name or pattern(regex)'))
 
 file_filters = (
     *file_specifiers,
     *gist_filters,
-    argument('-k', '--keyword', metavar='regex',
+    argument('-k', '--keyword', metavar='REGEX',
              help='filter by keyword'),
     argument('-b', '--binary', action='store_true',
-                help='including binary file(default: presetted text file extensions only)'))
+             help='including binary file'))
 
 gist_default_format = "adp"
 
@@ -126,7 +128,7 @@ def format_help():
     return help + "empty: all of above, default: " + gist_default_format
 
 @subcommand(*sys_flags, *read_options, *file_filters,
-            argument('-F', '--format', metavar='format', nargs="?",
+            argument('-F', '--format', nargs="?",
                      default=gist_default_format,
                      help="format of list (" + format_help() + ")"))
 def ls(congist, args):
@@ -180,16 +182,31 @@ def read(congist, args):
         else:
             output.buffer.write(content)
 
-@subcommand(argument('new_desc', metavar='desc',
+@subcommand(*sys_flags, *write_options, *file_filters,
+            argument('-D', '--new-desc', metavar='DESC',
                      help='new gist description'),
-            *sys_flags, *write_options, *file_filters)
-def desc(congist, args):
-    """Set description for filtered gists."""
-    for gist in congist.get_gists(**vars(args)):
-        if args.force or _confirm(gist, "set description"):
-            gist.set_description(args.new_desc)
+            argument('-N', '--new-name', metavar='NAME',
+                     help='new file name'),
+            argument('-C', '--new-content', metavar='PATH', nargs='?', default="",
+                     help='new content path(stdin if absent)'))
+def update(congist, args):
+    """Update description and/or file name/content for filtered gists/files."""
+    if args.new_desc:
+        for gist in congist.get_gists(**vars(args)):
+            if args.force or _confirm(gist, "update description"):
+                gist.set_description(args.new_desc)
+        return
 
-@subcommand(argument('new_tags', metavar='tag', nargs='*',
+    if args.new_name or args.new_content != '':
+        content = None
+        if args.new_content != '':
+            content = File.read(args.new_content)
+        for f in congist.get_files(**vars(args)):
+            f.update(args.new_name, content)
+    else:
+        raise ParameterError("Please specify one of -D, -N, -C")
+
+@subcommand(argument('new_tags', metavar='TAG', nargs='*',
                      help='new gist tags'),
             *sys_flags, *read_options, *write_options, *file_filters)
 def tag(congist, args):
@@ -203,7 +220,7 @@ def tag(congist, args):
         print(", ".join(tags), file=_get_output(args))
         
 
-@subcommand(argument('new_star', nargs='?', metavar='bool',
+@subcommand(argument('new_star', nargs='?', metavar='BOOL',
                      type=str2bool, default=None,
                      help='1: star, 0: unstar, empty: toggle star'),
             *sys_flags, *write_options, *file_filters)
@@ -216,19 +233,25 @@ def star(congist, args):
         elif args.force or _confirm(gist, "set star"):
             gist.set_starred(args.new_star)
  
-@subcommand(argument('file_paths', metavar='file-path', nargs='*',
+@subcommand(argument('file_paths', metavar='PATH', nargs='*',
                     help='file path(stdin if absent)'),
             *sys_flags, *write_options, *file_specifiers)
 def new(congist, args):
-    """Create gists from input files."""
-    congist.create_gists(args.file_paths, **vars(args))
+    """Create gist from input files."""
+    success = congist.create_gist(args.file_paths, **vars(args))
+    if args.verbose:
+        print("created gist successfully" if success else "failed to create gist")
 
-@subcommand(*sys_flags, *write_options, *file_filters)
+@subcommand(*sys_flags, *write_options, *file_filters,
+            argument('-F', '--is-file', action='store_true',
+                     help="delete file instead of gist"))
 def rm(congist, args):
-    """Remove filtered gists."""
-    for gist in congist.get_gists(**vars(args)):
-        if args.force or _confirm(gist, "delete"):
-            gist.delete()
+    """Remove filtered gists or files."""
+    options = vars(args)
+    is_file = options.pop('is_file')
+    for obj in congist.get_gists_or_files(is_file, **options):
+        if args.force or _confirm(obj, "delete", is_file):
+            obj.delete()
 
 @subcommand()
 def version(congist, args):
