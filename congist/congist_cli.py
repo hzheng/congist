@@ -10,11 +10,11 @@ import sys
 import traceback
 import yaml
 from argparse import ArgumentParser, ArgumentTypeError
-import json
 
 from congist.Congist import Congist, Gist, ConfigurationError, ParameterError
 from congist import __version__
 from congist.utils import File
+
 
 def _get_output(args):
     return open(expanduser(args.output), 'w') if args.output else sys.stdout
@@ -29,12 +29,14 @@ def _confirm(gist, action, is_file=False):
         print("skip", action)
         return False
 
-#############Command Argument Parse#############
+# ============Command Argument Parse============
 parser = ArgumentParser(description='Construct your gists')
 subparsers = parser.add_subparsers(dest='subcommand')
 
+
 def argument(*args, **kwargs):
     return (list(args), kwargs)
+
 
 def subcommand(*args):
     def decorator(f):
@@ -44,9 +46,10 @@ def subcommand(*args):
         parser.set_defaults(function=f)
     return decorator
 
+
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.upper() in ('T', 'Y', '1'):
         return True
     elif v.upper() in ('F', 'N', '0'):
@@ -86,10 +89,10 @@ user_specifiers = (
 
 gist_specifiers = (
     *user_specifiers,
-    argument('-p', '--public', nargs='?', metavar='BOOL', 
+    argument('-p', '--public', nargs='?', metavar='BOOL',
              type=str2bool, default=None,
              help='specify public gists(1=public, 0=private)'),
-    argument('-s', '--star', nargs='?', metavar='BOOL', 
+    argument('-s', '--star', nargs='?', metavar='BOOL',
              type=str2bool, default=None,
              help='specify starred gists(1=starred, 0=unstarred)'),
     argument('-t', '--tags', nargs='+', metavar='TAG',
@@ -101,7 +104,7 @@ gist_filters = (
     *filter_flags,
     argument('-i', '--id', nargs='+', metavar='GIST-ID',
              help='filter by gist IDs'),
-    argument('-c', '--created', metavar='DATE', nargs='+', 
+    argument('-c', '--created', metavar='DATE', nargs='+',
              help='filter by created time'),
     argument('-m', '--modified', metavar='DATE', nargs='+',
              help='filter by modified time'))
@@ -121,11 +124,13 @@ file_filters = (
 
 gist_default_format = "adp"
 
+
 def format_help():
     help = ""
     for k, v in Gist.format_map().items():
         help += k + ": " + v + "\n"
     return help + "empty: all of above, default: " + gist_default_format
+
 
 @subcommand(*sys_flags, *read_options, *file_filters,
             argument('-F', '--format', nargs="?",
@@ -139,17 +144,21 @@ def ls(congist, args):
         for gist in congist.get_gists(**vars(args)):
             print(gist.get_info(format), file=output)
     except KeyError as e:
-        raise ParameterError("unsupported format: {}\n{}".format(e, format_help()))
+        raise ParameterError("unsupported format: {}\n{}"
+                             .format(e, format_help()))
+
 
 @subcommand(*sys_flags, *read_options, *file_filters)
 def info(congist, args):
     """Print all filtered gists' info in JSON format."""
     congist.generate_index(_get_output(args), **vars(args))
 
+
 @subcommand(*sys_flags)
 def index(congist, args):
     """Dump all gists' info in JSON format to an index file."""
     congist.generate_full_index(**vars(args))
+
 
 @subcommand(*sys_flags, *write_options, *file_filters,
             argument('-D', '--download', action='store_true',
@@ -169,6 +178,7 @@ def sync(congist, args):
         if not args.dry_run:
             congist.generate_full_index(**vars(args))
 
+
 @subcommand(*sys_flags, *read_options, *file_filters)
 def read(congist, args):
     """Read filtered gists."""
@@ -182,12 +192,14 @@ def read(congist, args):
         else:
             output.buffer.write(content)
 
+
 @subcommand(*sys_flags, *write_options, *file_filters,
             argument('-D', '--new-desc', metavar='DESC',
                      help='new gist description'),
             argument('-N', '--new-name', metavar='NAME',
                      help='new file name'),
-            argument('-C', '--new-content', metavar='PATH', nargs='?', default="",
+            argument('-C', '--new-content', metavar='PATH',
+                     nargs='?', default="",
                      help='new content path(stdin if absent)'))
 def update(congist, args):
     """Update description and/or file name/content for filtered gists/files."""
@@ -206,6 +218,7 @@ def update(congist, args):
     else:
         raise ParameterError("Please specify one of -D, -N, -C")
 
+
 @subcommand(argument('new_tags', metavar='TAG', nargs='*',
                      help='new gist tags'),
             *sys_flags, *read_options, *write_options, *file_filters)
@@ -218,7 +231,7 @@ def tag(congist, args):
     else:
         tags = congist.list_tags(**vars(args))
         print(", ".join(tags), file=_get_output(args))
-        
+
 
 @subcommand(argument('new_star', nargs='?', metavar='BOOL',
                      type=str2bool, default=None,
@@ -232,15 +245,18 @@ def star(congist, args):
                 gist.toggle_starred()
         elif args.force or _confirm(gist, "set star"):
             gist.set_starred(args.new_star)
- 
+
+
 @subcommand(argument('file_paths', metavar='PATH', nargs='*',
-                    help='file path(stdin if absent)'),
+                     help='file path(stdin if absent)'),
             *sys_flags, *write_options, *file_specifiers)
 def new(congist, args):
     """Create gist from input files."""
     success = congist.create_gist(args.file_paths, **vars(args))
     if args.verbose:
-        print("created gist successfully" if success else "failed to create gist")
+        print("created gist successfully" if success
+              else "failed to create gist")
+
 
 @subcommand(*sys_flags, *write_options, *file_filters,
             argument('-F', '--is-file', action='store_true',
@@ -253,10 +269,12 @@ def rm(congist, args):
         if args.force or _confirm(obj, "delete", is_file):
             obj.delete()
 
+
 @subcommand()
 def version(congist, args):
     """Show the version of Congist."""
     print(__version__)
+
 
 def main(argv=None):
     # read command args
@@ -264,15 +282,15 @@ def main(argv=None):
     if args.subcommand is None:
         parser.print_help()
         return
-    
+
     # load system config
     cfg_file = join(dirname(abspath(__file__)), "../congist.yml")
     with open(cfg_file, 'r') as sys_file:
         sys_config = yaml.load(sys_file, yaml.SafeLoader)
         user_config_path = expanduser(sys_config['user_cfg_path'])
-    
+
         # load user config
-        # TODO: if user_config_path does not exist, prompt and create a template
+        # TODO: if user_config_path does not exist, create a template
         with open(user_config_path, 'r') as user_file:
             # override order: sys config -> user config -> command args
             user_config = yaml.load(user_file, yaml.SafeLoader)

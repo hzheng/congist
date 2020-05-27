@@ -6,6 +6,7 @@ GithubAgent represents a Github agent.
 
 from congist.github.GithubSession import GithubSession
 
+
 class GithubAgent:
     BASE_URL = "https://api.github.com"
 
@@ -16,7 +17,7 @@ class GithubAgent:
     def host(self):
         type_name = type(self).__name__
         return type_name[:-5].lower()
- 
+
     @property
     def username(self):
         return self._session.username

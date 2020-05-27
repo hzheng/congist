@@ -5,14 +5,13 @@ Congist is the core worker.
 """
 
 import json
-import re
 import os
-import sys
 
 from os.path import expanduser, isdir, join
 
 from congist.utils import String, File, Time, Type
 from congist.Gist import GistUser, Gist
+
 
 class Congist:
     LOCAL_BASE = 'local_base'
@@ -108,9 +107,10 @@ class Congist:
                                                local_base=user_local_base,
                                                index_file=index_file)
                 local_agents[username] = local_agent
-            
+
             if host not in self._default_users:
-                raise ConfigurationError("Please set at least one user at " + host)
+                raise ConfigurationError(
+                    "Please set at least one user at " + host)
 
     @property
     def hosts(self):
@@ -153,11 +153,13 @@ class Congist:
             if username not in agents:
                 raise ParameterError("Username " + username + " not found")
         else:
-            matched_users = [u for u in agents.keys() if username in u ]
+            matched_users = [u for u in agents.keys() if username in u]
             if len(matched_users) == 0:
-                raise ParameterError("No fuzzy matched username found for " + username)
+                raise ParameterError("No fuzzy matched username found for " +
+                                     username)
             if len(matched_users) > 1:
-                raise ParameterError("More than 1 username fuzzy match for " + username)
+                raise ParameterError("More than 1 username fuzzy match for " +
+                                     username)
             username = matched_users[0]
 
         return agents[username]
@@ -178,7 +180,7 @@ class Congist:
             users = [username] if username else self.get_users(host)
             for u in users:
                 if args[self.VERBOSE]:
-                    print("username", u) # TODO: change to callback
+                    print("username", u)  # TODO: change to callback
                 agent = self._get_agent(agents, u, self._exact)
                 for gist in agent.get_gists():
                     yield from self._filter_gist(gist, is_file, **args)
@@ -191,7 +193,7 @@ class Congist:
         gist_id = args[self.ID]
         if gist_id:
             if self._exact:
-                if  gist.id not in gist_id:
+                if gist.id not in gist_id:
                     return
             else:
                 if all(gid not in gist.id for gid in gist_id):
@@ -223,7 +225,7 @@ class Congist:
 
     def get_attrs(self, **args):
         for gist in self.get_gists(**args):
-            yield gist.get_attrs() 
+            yield gist.get_attrs()
 
     def list_tags(self, **args):
         tags = set()
@@ -255,12 +257,14 @@ class Congist:
     def _filter_file(self, gist, is_file, **args):
         binary = args.get(self.BINARY)
         for f in gist.file_entries:
-            if not String.match(f.name, args[self.FILE_NAME], args[self.CASE_SENSITIVE]):
+            if not String.match(f.name, args[self.FILE_NAME],
+                                args[self.CASE_SENSITIVE]):
                 continue
             if f.binary and not binary:
                 continue
             keyword = args[self.KEYWORD]
-            if keyword and (f.binary or not String.match(f.content, keyword, args[self.CASE_SENSITIVE])):
+            if keyword and (f.binary or not String.match(
+                    f.content, keyword, args[self.CASE_SENSITIVE])):
                 continue
             if is_file:
                 yield f
@@ -288,15 +292,17 @@ class Congist:
         else:
             gist_url = gist.pull_url
         cmd = "git clone {verbose} {url} {local_dir}".format(
-            local_dir=local_dir, verbose=("" if args[self.VERBOSE] else " -q"), url=gist_url)
+            local_dir=local_dir, verbose=("" if args[self.VERBOSE] else " -q"),
+            url=gist_url)
         if args[self.DRY_RUN]:
             print(cmd)
         else:
             os.system(cmd)
 
     def _pull_gists(self, local_dir, **args):
-        #TODO: put rebase option in arguments or setting
-        cmd = "cd {}; git pull {}".format(local_dir, "" if args[self.VERBOSE] else " -q")
+        # TODO: put rebase option in arguments or setting
+        cmd = "cd {}; git pull {}".format(
+            local_dir, "" if args[self.VERBOSE] else " -q")
         if args[self.DRY_RUN]:
             print(cmd)
         else:
@@ -333,14 +339,15 @@ class Congist:
         agents = self.get_agents(host)
         username = args[self.USER]
         if username is None:
-            username = self._default_users[host] # at least 1
+            username = self._default_users[host]  # at least 1
         agent = self._get_agent(agents, username, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
-        is_binary = False # TODO: args[self.BINARY]
+        is_binary = False  # TODO: args[self.BINARY]
         filename = args[self.FILE_NAME] or self._default_filename
         files = File.file_map(paths, filename, is_binary)
         return agent.create_gist(desc, files, public)
+
 
 class ClientError(Exception):
     """Client-side error"""

@@ -14,24 +14,29 @@ from datetime import datetime, timezone, timedelta
 from os.path import basename, expanduser
 from sys import stdin
 
+
 class String:
     @staticmethod
     def equals(str1, str2, case_sensitive=False):
         if case_sensitive:
             return str1 == str2
 
-        if str1 is None and str2 is None: return True
-        if str1 is None or str2 is None: return False
+        if str1 is None and str2 is None:
+            return True
+        if str1 is None or str2 is None:
+            return False
         return String.casefold(str1) == String.casefold(str2)
 
     @staticmethod
     def contains(str1, str2, case_sensitive=False):
-        if str2 is None: return True
-        if str1 is None: return False
+        if str2 is None:
+            return True
+        if str1 is None:
+            return False
         if not case_sensitive:
             str1 = String.casefold(str1)
             str2 = String.casefold(str2)
-        return str2 in str1 
+        return str2 in str1
 
     @staticmethod
     def casefold(text):
@@ -45,21 +50,24 @@ class String:
             return True
 
         # return String.contains(text, keyword, case_sensitive)
-        flag = 0 if case_sensitive else re.IGNORECASE 
+        flag = 0 if case_sensitive else re.IGNORECASE
         return re.search(keyword, text, flag | re.DOTALL | re.MULTILINE)
 
-class Array:
+
+class Collection:
     @staticmethod
-    def contains(arr, s, case_sensitive=False):
+    def contains(collection, s, case_sensitive=False):
         if s is None:
             return True
-        if arr is None:
+        if collection is None:
             return False
 
-        if not case_sensitive:
-            str1 = String.casefold(str1)
-            str2 = String.casefold(str2)
-        return str2 in str1 
+        if case_sensitive:
+            return s in collection
+
+        s = String.casefold(s)
+        return any(s == String.casefold(e) for e in collection)
+
 
 class File:
     TEXT_PATTERN = 'text-pattern'
@@ -96,6 +104,7 @@ class File:
             files[filename] = {key: File.read(None, is_binary)}
         return files
 
+
 class Time:
     FORMAT_PATTERN = re.compile('^(\d+)(y|M|d|h|m|s)?([+-])?$')
     UNIT_MAP = {
@@ -116,7 +125,7 @@ class Time:
             if not Time._check(target_time, current_time, expr):
                 return False
         return True
-    
+
     @staticmethod
     def _check(target_time, current_time, expression):
         matched = Time.FORMAT_PATTERN.match(expression)
@@ -130,9 +139,9 @@ class Time:
             return src_time > target_time
         if relative == '-':
             return src_time < target_time
-        
+
         diff = abs(src_time - target_time)
-        return diff < timedelta(**{time_key : 1})
+        return diff < timedelta(**{time_key: 1})
 
 
 class Type:
@@ -140,7 +149,7 @@ class Type:
     @staticmethod
     def get_type(type_name):
         dot_pos = type_name.rindex('.')
-        module_str = type_name[:dot_pos] 
+        module_str = type_name[:dot_pos]
         type_str = type_name[dot_pos + 1:]
         module = importlib.import_module(module_str)
         return getattr(module, type_str)

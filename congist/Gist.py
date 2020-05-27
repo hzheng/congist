@@ -15,6 +15,7 @@ GistUser = namedtuple('GistUser', ['username', 'access_token'])
 Gist represents a generic gist class.
 """
 
+
 class Gist:
     TAGS = 'tags'
     TAG_MARK = '#'
@@ -44,7 +45,7 @@ class Gist:
     @staticmethod
     def format_map():
         if not Gist._format_map:
-            Gist._format_map = {v[0] : v for v in Gist.ATTRS}
+            Gist._format_map = {v[0]: v for v in Gist.ATTRS}
         return Gist._format_map
 
     def __init__(self, username):
@@ -56,9 +57,10 @@ class Gist:
         self._tags = sorted(desc_dict[self.TAGS])
 
     def __repr__(self):
-        return 'username={username}; url={url}; description={description}; public={public}'.format(
-            username=self.username, url=self.api_url, description=self.description,
-            public=self.public)
+        return "username={username}; url={url}; description={description}; " \
+            "public={public}".format(
+                username=self.username, url=self.api_url,
+                description=self.description, public=self.public)
 
     def __str__(self):
         return self.get_info("adp")
@@ -103,46 +105,43 @@ class Gist:
 
     @property
     def id(self): ...
- 
+
     @property
     def description(self): ...
- 
+
     @property
     def tags(self):
         return self._tags
- 
+
     @property
     def title(self):
         return self._title or self._subtitle or ''
-    
+
     @property
     def public(self): ...
- 
+
     @property
     def api_url(self): ...
- 
+
     @property
     def html_url(self): ...
- 
+
     @property
     def pull_url(self): ...
- 
+
     @property
     def push_url(self): ...
- 
-    @property
-    def html_url(self): ...
- 
+
     @property
     def files(self):
-        return {f.name: f.attrs for f in self.file_entries }
- 
+        return {f.name: f.attrs for f in self.file_entries}
+
     @property
     def file_entries(self): ...
-    
+
     @property
     def created(self): ...
-    
+
     @property
     def updated(self): ...
 
@@ -155,20 +154,21 @@ class Gist:
         self.set_starred(not self.starred)
 
     def delete(self): ...
-    
+
     def set_description(self, description): ...
- 
+
     def set_tags(self, tags):
         desc = self._split_desc(self.description)
         desc[self.TAGS] = tags
         self.set_description(self._join_desc(desc))
- 
+
     def has_tags(self, tags):
         return all(t in self.tags for t in tags)
- 
+
     def _split_desc(self, desc):
         matched = self._desc_pattern.match(desc).groupdict()
-        matched.update({k: v.strip() for k, v in matched.items() if isinstance(v, str)})
+        matched.update({k: v.strip() for k, v in matched.items()
+                        if isinstance(v, str)})
         tags = matched[self.TAGS]
         tags = tags.split(self.TAG_MARK) if tags else []
         matched[self.TAGS] = {t.strip() for t in tags if t.strip()}
@@ -181,8 +181,8 @@ class Gist:
             tags = (" " + self.TAG_MARK) + tags
         format_desc[self.TAGS] = tags
         joined = self._desc_format.format(**format_desc)
-        if not desc[self.TITLE]: # skip empty title
+        if not desc[self.TITLE]:  # skip empty title
             joined = joined[joined.find(' ') + 1:]
         return joined
-    
+
     def get_content(self, gist_file): ...
