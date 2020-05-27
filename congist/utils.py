@@ -5,13 +5,14 @@ Utility functions
 """
 
 import importlib
+import os
 import re
 import unicodedata
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timezone, timedelta
 
-from os.path import basename, expanduser
+from os.path import basename, split, join, expanduser
 from sys import stdin
 
 
@@ -103,6 +104,15 @@ class File:
         else:
             files[filename] = {key: File.read(None, is_binary)}
         return files
+
+    @staticmethod
+    def config_path(path):
+        if os.name != 'posix':
+            dir_name, file_name = split(path)
+            if file_name.startswith('.'):
+                file_name = '_' + file_name[1:]
+            path = join(dir_name, file_name)
+        return expanduser(path)
 
 
 class Time:

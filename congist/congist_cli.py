@@ -287,7 +287,7 @@ def main(argv=None):
     cfg_file = join(dirname(abspath(__file__)), "../congist.yml")
     with open(cfg_file, 'r') as sys_file:
         sys_config = yaml.load(sys_file, yaml.SafeLoader)
-        user_config_path = expanduser(sys_config['user_cfg_path'])
+        user_config_path = File.config_path(sys_config['user_cfg_path'])
 
         # load user config
         # TODO: if user_config_path does not exist, create a template
