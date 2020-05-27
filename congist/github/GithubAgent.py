@@ -4,7 +4,7 @@
 GithubAgent represents a Github agent.
 """
 
-from congist.GithubSession import GithubSession
+from congist.github.GithubSession import GithubSession
 
 class GithubAgent:
     BASE_URL = "https://api.github.com"

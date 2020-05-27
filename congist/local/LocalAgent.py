@@ -6,7 +6,7 @@ Local agent.
 
 import json
 
-from congist.LocalGist import LocalGist
+from congist.local.LocalGist import LocalGist
 
 class LocalAgent:
 
@@ -36,3 +36,7 @@ class LocalAgent:
             user = self.username
             for obj in json.load(f)[user]:
                 yield LocalGist(obj, user, self.local_base)
+
+    @staticmethod
+    def gist_dir(gist):
+        return LocalGist.dir_name(gist)

@@ -8,14 +8,11 @@ import json
 import re
 import os
 import sys
-import importlib
 
 from os.path import expanduser, isdir, join
 
-from congist.utils import String, File, Time
+from congist.utils import String, File, Time, Type
 from congist.Gist import GistUser, Gist
-from congist.LocalAgent import LocalAgent
-from congist.LocalGist import LocalGist
 
 class Congist:
     LOCAL_BASE = 'local_base'
@@ -103,14 +100,14 @@ class Congist:
                 os.makedirs(user_local_base, exist_ok=True)
                 self.set_local_dir(host, username, user_local_base)
                 # dynamically load agent class
-                agent_module, agent_class = agent_types[host].split('.')
-                module = importlib.import_module(agent_module)
-                agent_type = getattr(module, agent_class)
+                agent_type = Type.get_type(agent_types[host])
                 agent = agent_type(gist_user=gist_user)
                 host_agents[username] = agent
-                local_agents[username] = LocalAgent(remote_agent=agent,
-                                                    local_base=user_local_base,
-                                                    index_file=index_file)
+                local_agent_type = Type.get_type(agent_types[self.LOCAL])
+                local_agent = local_agent_type(remote_agent=agent,
+                                               local_base=user_local_base,
+                                               index_file=index_file)
+                local_agents[username] = local_agent
             
             if host not in self._default_users:
                 raise ConfigurationError("Please set at least one user at " + host)
@@ -138,6 +135,9 @@ class Congist:
 
     def _get_local_parent(self, gist):
         return self.get_local_dir(gist.host, gist.username)
+
+    def _get_local_agent(self, gist):
+        return self._local_agents[gist.host][gist.username]
 
     def get_agents(self, host, local=False):
         try:
@@ -275,7 +275,8 @@ class Congist:
     def download_gists(self, **args):
         for gist in self.get_gists(**args):
             local_parent = self._get_local_parent(gist)
-            local_dir = join(local_parent, LocalGist.dir_name(gist))
+            local_agent = self._get_local_agent(gist)
+            local_dir = join(local_parent, local_agent.gist_dir(gist))
             if isdir(local_dir):
                 self._pull_gists(local_dir, **args)
             else:
@@ -311,7 +312,8 @@ class Congist:
             return
 
         # subdirs = os.listdir(local_dir)
-        subdirs = [LocalGist.dir_name(gist)]
+        local_agent = self._get_local_agent(gist)
+        subdirs = [local_agent.gist_dir(gist)]
         for subdir in subdirs:
             subdir = join(local_dir, subdir)
             if not isdir(subdir):

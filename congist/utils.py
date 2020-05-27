@@ -4,6 +4,7 @@
 Utility functions
 """
 
+import importlib
 import re
 import unicodedata
 import dateutil.parser
@@ -132,3 +133,14 @@ class Time:
         
         diff = abs(src_time - target_time)
         return diff < timedelta(**{time_key : 1})
+
+
+class Type:
+
+    @staticmethod
+    def get_type(type_name):
+        dot_pos = type_name.rindex('.')
+        module_str = type_name[:dot_pos] 
+        type_str = type_name[dot_pos + 1:]
+        module = importlib.import_module(module_str)
+        return getattr(module, type_str)

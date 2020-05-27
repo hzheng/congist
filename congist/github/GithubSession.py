@@ -8,7 +8,7 @@ Reference: http://developer.github.com/v3/gists
 import json
 import requests
 
-from congist.GithubGist import GithubGist
+from congist.github.GithubGist import GithubGist
 from congist.GistFile import GistFile
 
 class GithubSession:
