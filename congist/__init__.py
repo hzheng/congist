@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+"""Congist package."""
+
 __author__ = "Hui Zheng"
 __copyright__ = "Copyright 2020 Hui Zheng"
 __credits__ = ["Hui Zheng"]

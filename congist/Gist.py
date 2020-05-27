@@ -4,16 +4,12 @@ import re
 from collections import namedtuple
 
 
-"""
-GistUser represents a gist user.
-"""
+"""GistUser represents a gist user."""
 
 GistUser = namedtuple('GistUser', ['username', 'access_token'])
 
 
-"""
-Gist represents a generic gist class.
-"""
+"""Gist represents a generic gist class."""
 
 
 class Gist:
@@ -35,7 +31,7 @@ class Gist:
         'tags',
         'files'
     ]
-    _format_map = None
+    _format_map = {}
 
     @staticmethod
     def init(config):
@@ -65,8 +61,8 @@ class Gist:
     def __str__(self):
         return self.get_info("adp")
 
-    def get_info(self, format=None):
-        attrs = self.get_attrs(format)
+    def get_info(self, fmt=None):
+        attrs = self.get_attrs(fmt)
         if 'public' in attrs:
             attrs['public'] = '+' if self.public else '-'
         if 'starred' in attrs:
@@ -86,10 +82,10 @@ class Gist:
             info += "\n".join([f['url'] for f in files.values()])
         return info
 
-    def get_attrs(self, format=None):
+    def get_attrs(self, fmt=None):
         attrs = {}
         fmt_map = self.format_map()
-        for f in (format or list(fmt_map.keys())):
+        for f in (fmt or list(fmt_map.keys())):
             key = fmt_map[f]
             attrs[key] = getattr(self, key)
         return attrs

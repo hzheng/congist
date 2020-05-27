@@ -8,12 +8,11 @@ import importlib
 import os
 import re
 import unicodedata
-import dateutil.parser
-from dateutil.relativedelta import relativedelta
-from datetime import datetime, timezone, timedelta
-
 from os.path import basename, split, join, expanduser
 from sys import stdin
+from datetime import datetime, timezone, timedelta
+import dateutil.parser
+from dateutil.relativedelta import relativedelta
 
 
 class String:
@@ -57,25 +56,25 @@ class String:
 
 class Collection:
     @staticmethod
-    def contains(collection, s, case_sensitive=False):
-        if s is None:
+    def contains(collection, word, case_sensitive=False):
+        if word is None:
             return True
         if collection is None:
             return False
 
         if case_sensitive:
-            return s in collection
+            return word in collection
 
-        s = String.casefold(s)
-        return any(s == String.casefold(e) for e in collection)
+        word = String.casefold(word)
+        return any(word == String.casefold(e) for e in collection)
 
 
 class File:
-    TEXT_PATTERN = 'text-pattern'
+    TEXT_PAT_STR = 'text-pattern'
 
     @staticmethod
     def init(config):
-        text_pattern = config[File.TEXT_PATTERN]
+        text_pattern = config[File.TEXT_PAT_STR]
         File.TEXT_PATTERN = re.compile(text_pattern)
 
     @staticmethod
@@ -116,7 +115,7 @@ class File:
 
 
 class Time:
-    FORMAT_PATTERN = re.compile('^(\d+)(y|M|d|h|m|s)?([+-])?$')
+    FORMAT_PATTERN = re.compile(r'^(\d+)(y|M|d|h|m|s)?([+-])?$')
     UNIT_MAP = {
         'y': 'years',
         'M': 'months',

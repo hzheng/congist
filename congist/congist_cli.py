@@ -8,8 +8,8 @@ Command-line client for Congist.
 from os.path import expanduser, dirname, abspath, join
 import sys
 import traceback
-import yaml
 from argparse import ArgumentParser, ArgumentTypeError
+import yaml
 
 from congist.Congist import Congist, Gist, ConfigurationError, ParameterError
 from congist import __version__
@@ -25,9 +25,9 @@ def _confirm(gist, action, is_file=False):
                   .format(action, "file" if is_file else "gist", gist))
     if reply.lower() == 'y':
         return True
-    else:
-        print("skip", action)
-        return False
+
+    print("skip", action)
+    return False
 
 # ============Command Argument Parse============
 parser = ArgumentParser(description='Construct your gists')
@@ -40,22 +40,21 @@ def argument(*args, **kwargs):
 
 def subcommand(*args):
     def decorator(f):
-        parser = subparsers.add_parser(f.__name__, description=f.__doc__)
+        arg_parser = subparsers.add_parser(f.__name__, description=f.__doc__)
         for arg in args:
-            parser.add_argument(*arg[0], **arg[1])
-        parser.set_defaults(function=f)
+            arg_parser.add_argument(*arg[0], **arg[1])
+        arg_parser.set_defaults(function=f)
     return decorator
 
 
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.upper() in ('T', 'Y', '1'):
+def str2bool(val):
+    if isinstance(val, bool):
+        return val
+    if val.upper() in ('T', 'Y', '1'):
         return True
-    elif v.upper() in ('F', 'N', '0'):
+    if val.upper() in ('F', 'N', '0'):
         return False
-    else:
-        raise ArgumentTypeError('Boolean value(T/F, Y/N, 1/0) expected')
+    raise ArgumentTypeError('Boolean value(T/F, Y/N, 1/0) expected')
 
 sys_flags = (
     argument('-v', '--verbose', action='store_true',
@@ -122,27 +121,27 @@ file_filters = (
     argument('-k', '--keyword', metavar='REGEX',
              help='filter by keyword'))
 
-gist_default_format = "adp"
+GIST_DEFAULT_FORMAT = "adp"
 
 
 def format_help():
-    help = ""
-    for k, v in Gist.format_map().items():
-        help += k + ": " + v + "\n"
-    return help + "empty: all of above, default: " + gist_default_format
+    help_msg = ""
+    for k, val in Gist.format_map().items():
+        help_msg += k + ": " + val + "\n"
+    return help_msg + "empty: all of above, default: " + GIST_DEFAULT_FORMAT
 
 
 @subcommand(*sys_flags, *read_options, *file_filters,
             argument('-F', '--format', nargs="?",
-                     default=gist_default_format,
+                     default=GIST_DEFAULT_FORMAT,
                      help="format of list (" + format_help() + ")"))
 def ls(congist, args):
     """List all filtered gists with the given format."""
     output = _get_output(args)
-    format = args.format
+    fmt = args.format
     try:
         for gist in congist.get_gists(**vars(args)):
-            print(gist.get_info(format), file=output)
+            print(gist.get_info(fmt), file=output)
     except KeyError as e:
         raise ParameterError("unsupported format: {}\n{}"
                              .format(e, format_help()))
@@ -271,12 +270,12 @@ def rm(congist, args):
 
 
 @subcommand()
-def version(congist, args):
+def version():
     """Show the version of Congist."""
     print(__version__)
 
 
-def main(argv=None):
+def main():
     # read command args
     args = parser.parse_args()
     if args.subcommand is None:

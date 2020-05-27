@@ -351,14 +351,11 @@ class Congist:
 
 class ClientError(Exception):
     """Client-side error"""
-    pass
 
 
 class ConfigurationError(ClientError):
     """Configuration error"""
-    pass
 
 
 class ParameterError(ClientError):
     """Parameter error"""
-    pass
