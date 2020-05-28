@@ -67,6 +67,7 @@ class Congist:
             local_base = os.getenv(local_base[1:], os.getcwd())
         self._local_base = local_base
         self._metadata_base = join(local_base, config[self.METADATA_BASE])
+        File.mkdir(self._metadata_base)
         self._index_file = join(self._metadata_base, config[self.INDEX_FILE])
         commit = config[self.COMMIT]
         self._commit_command = commit[self.COMMAND]
@@ -96,7 +97,7 @@ class Congist:
                 if host not in self._default_users:
                     self._default_users[host] = username
                 user_local_base = self.get_local_host_base(host, username)
-                os.makedirs(user_local_base, exist_ok=True)
+                File.mkdir(user_local_base)
                 self.set_local_dir(host, username, user_local_base)
                 # dynamically load agent class
                 agent_type = Type.get_type(agent_types[host])

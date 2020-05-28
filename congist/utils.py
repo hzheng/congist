@@ -11,6 +11,7 @@ import unicodedata
 from os.path import basename, split, join, expanduser
 from sys import stdin
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
 
@@ -76,6 +77,13 @@ class File:
     def init(config):
         text_pattern = config[File.TEXT_PAT_STR]
         File.TEXT_PATTERN = re.compile(text_pattern)
+
+    @staticmethod
+    def mkdir(path, exist_ok=True, parents=True, mode=0o755):
+        try:
+            Path(path).mkdir(parents=parents, exist_ok=exist_ok, mode=mode)
+        except (TypeError, AttributeError):
+            os.makedirs(path, exist_ok=exist_ok, mode=mode)
 
     @staticmethod
     def is_binary(filename, content_type):

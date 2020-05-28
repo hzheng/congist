@@ -9,7 +9,7 @@ create, read, update, and delete (CRUD) operations as well as synchronization on
 
 ## INSTALLATION
 
-1. Clone this repository in a terminal and change to the project directory.
+1. Clone or download this repository in a terminal and change to the project directory.
 
 2. Obtain an access token from [GitHub](https://github.com/settings/tokens).
 
