@@ -62,10 +62,14 @@ class Congist:
             raise ConfigurationError(e)
 
     def _read_config(self, config):
-        local_base = expanduser(config[self.LOCAL_BASE])
+        local_base = config[self.LOCAL_BASE]
         if local_base[0] == '$':
-            local_base = os.getenv(local_base[1:], os.getcwd())
-        self._local_base = local_base
+            base_var = local_base[1:]
+            local_base = os.getenv(base_var)
+            if local_base is None:
+                raise ConfigurationError("Environment variable " + base_var +
+                                         "(for local directory) is not set")
+        self._local_base = local_base = expanduser(local_base)
         self._metadata_base = join(local_base, config[self.METADATA_BASE])
         File.mkdir(self._metadata_base)
         self._index_file = join(self._metadata_base, config[self.INDEX_FILE])
