@@ -54,7 +54,7 @@ install-dev:
 install:
 	@$(PYTHON) setup.py install --record $(INSTALLED)
 
-	@$(eval PY=$(shell $(PIP) list -v  | grep congist | awk '{print $$3}')/congist/congist_cli.py)
+	@$(eval PY=$(shell cd && $(PIP) list -v  | grep congist | awk '{print $$3}')/congist/congist_cli.py)
 	@echo '$(PYTHON) $(PY) "$$@"' > $(SCRIPT)
 	@chmod +x $(SCRIPT)
 	@echo generated the ready-to-use script: $(SCRIPT)

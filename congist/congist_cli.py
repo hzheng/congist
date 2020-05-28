@@ -135,7 +135,7 @@ def format_help():
             argument('-F', '--format', nargs="?",
                      default=GIST_DEFAULT_FORMAT,
                      help="format of list (" + format_help() + ")"))
-def ls(congist, args):
+def lists(congist, args):
     """List all filtered gists with the given format."""
     output = _get_output(args)
     fmt = args.format
@@ -249,7 +249,7 @@ def star(congist, args):
 @subcommand(argument('file_paths', metavar='PATH', nargs='*',
                      help='file path(stdin if absent)'),
             *sys_flags, *write_options, *file_specifiers)
-def new(congist, args):
+def create(congist, args):
     """Create gist from input files."""
     success = congist.create_gist(args.file_paths, **vars(args))
     if args.verbose:
@@ -260,7 +260,7 @@ def new(congist, args):
 @subcommand(*sys_flags, *write_options, *file_filters,
             argument('-F', '--is-file', action='store_true',
                      help="delete file instead of gist"))
-def rm(congist, args):
+def delete(congist, args):
     """Remove filtered gists or files."""
     options = vars(args)
     is_file = options.pop('is_file')
