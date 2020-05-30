@@ -6,10 +6,11 @@ Local agent.
 
 import json
 
+from congist.GistAgent import GistAgent
 from congist.local.LocalGist import LocalGist
 
 
-class LocalAgent:
+class LocalAgent(GistAgent):
 
     def __init__(self, remote_agent, local_base, index_file):
         self._remote = remote_agent

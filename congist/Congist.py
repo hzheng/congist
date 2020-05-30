@@ -96,6 +96,8 @@ class Congist:
             if not self.default_host:
                 self._default_host = host
             for user in settings[self.USERS]:
+                if self.SSH not in user:
+                    user[self.SSH] = False
                 gist_user = GistUser(**user)
                 username = gist_user.username
                 if host not in self._default_users:
@@ -152,6 +154,9 @@ class Congist:
 
     def get_users(self, host):
         return self.get_agents(host).keys()
+
+    def _get_agent_from_gist(self, gist):
+        return self.get_agents(gist.host)[gist.username]
 
     def _get_agent(self, agents, username, exact):
         if exact:
@@ -283,16 +288,23 @@ class Congist:
 
     def download_gists(self, **args):
         for gist in self.get_gists(**args):
-            local_parent = self._get_local_parent(gist)
-            local_agent = self._get_local_agent(gist)
-            local_dir = join(local_parent, local_agent.gist_dir(gist))
-            if isdir(local_dir):
-                self._pull_gists(local_dir, **args)
-            else:
-                self._clone_gists(gist, local_dir, **args)
+            self._download_gist(gist, **args)
+
+    def _download_gist(self, gist, **args):
+        local_parent = self._get_local_parent(gist)
+        local_agent = self._get_local_agent(gist)
+        local_dir = join(local_parent, local_agent.gist_dir(gist))
+        if isdir(local_dir):
+            self._pull_gists(local_dir, **args)
+        else:
+            self._clone_gists(gist, local_dir, **args)
+        return local_dir
 
     def _clone_gists(self, gist, local_dir, **args):
-        if args[self.SSH]:
+        ssh = args.get(self.SSH)
+        if ssh is None:
+            ssh = self._get_agent_from_gist(gist).ssh
+        if ssh:
             gist_url = "git@" + gist.pull_url.replace('/', ':')[8:]
         else:
             gist_url = gist.pull_url
@@ -315,9 +327,9 @@ class Congist:
 
     def upload_gists(self, **args):
         for gist in self.get_gists(**args):
-            self._upload_gists(gist, **args)
+            self._upload_gist(gist, **args)
 
-    def _upload_gists(self, gist, **args):
+    def _upload_gist(self, gist, **args):
         local_dir = self.get_local_host_base(gist.host, gist.username)
         if not isdir(local_dir):
             return
@@ -332,7 +344,7 @@ class Congist:
             cmd = ("cd {subdir} &&" + self._commit_command).format(
                 subdir=subdir, comment=self._commit_message,
                 verbose=("" if args[self.VERBOSE] else "-q"))
-            if args[self.DRY_RUN]:
+            if args.get(self.DRY_RUN):
                 print(cmd)
             else:
                 os.system(cmd)
@@ -348,10 +360,19 @@ class Congist:
         agent = self._get_agent(agents, username, self._exact)
         public = args[self.PUBLIC] or False
         desc = args[self.DESC] or self._default_description
-        is_binary = False  # TODO: args[self.BINARY]
         filename = args[self.FILE_NAME] or self._default_filename
+        is_binary = args[self.BINARY]
         files = File.file_map(paths, filename, is_binary)
-        return agent.create_gist(desc, files, public)
+        if is_binary:  # create placeholder file first
+            original_files = files
+            filename = next(iter(files))
+            files = File.dummy_file_map(filename)
+        gist = agent.create_gist(files, desc, public)
+        if is_binary:  # clone and push
+            local_dir = self._download_gist(gist, **args)
+            File.copy_files(original_files, local_dir)
+            self._upload_gist(gist, **args)
+        return gist
 
 
 class ClientError(Exception):

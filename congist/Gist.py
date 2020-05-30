@@ -6,7 +6,7 @@ from collections import namedtuple
 
 """GistUser represents a gist user."""
 
-GistUser = namedtuple('GistUser', ['username', 'access_token'])
+GistUser = namedtuple('GistUser', ['username', 'access_token', 'ssh'])
 
 
 """Gist represents a generic gist class."""

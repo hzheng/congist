@@ -251,9 +251,9 @@ def star(congist, args):
             *sys_flags, *write_options, *file_specifiers)
 def create(congist, args):
     """Create gist from input files."""
-    success = congist.create_gist(args.file_paths, **vars(args))
+    gist = congist.create_gist(args.file_paths, **vars(args))
     if args.verbose:
-        print("created gist successfully" if success
+        print("created gist successfully" if gist
               else "failed to create gist")
 
 
@@ -311,6 +311,8 @@ if __name__ == '__main__':
         print("Please fix the parameter:", pe)
     except OSError as oe:
         print("Please fix the OS-related problem:", oe)
+    except UnicodeError as ue:
+        print("Please enable binary mode(-b):", ue)
     except Exception as e:
         traceback.print_exc(file=sys.stdout)
         print("Please report the bug:", e)

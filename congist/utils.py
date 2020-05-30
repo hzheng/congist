@@ -101,16 +101,30 @@ class File:
                 return stdin.buffer.read()
             return stdin.read()
 
+    FILE_KEY = 'content'
+
     @staticmethod
     def file_map(paths, filename, is_binary=False):
         files = {}
-        key = 'content'
+        key = File.FILE_KEY
         if paths:
             for path in paths:
                 files[basename(path)] = {key: File.read(path, is_binary)}
         else:
             files[filename] = {key: File.read(None, is_binary)}
         return files
+
+    @staticmethod
+    def dummy_file_map(filename):
+        return {
+            filename:  {File.FILE_KEY: 'PLACEHOLDER'}
+        }
+
+    @staticmethod
+    def copy_files(files, local_dir):
+        for name, item in files.items():
+            with open(os.path.join(local_dir, name), 'wb') as f:
+                f.write(item[File.FILE_KEY])
 
     @staticmethod
     def config_path(path):

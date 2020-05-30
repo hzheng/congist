@@ -28,9 +28,12 @@ class GithubSession:
 
     def get_gists(self):
         for gist in self._session.get(self.GIST_URL).json():
-            file_entries = [self._gist_attrs(f)
-                            for f in gist['files'].values()]
-            yield GithubGist(self, gist, file_entries)
+            yield self._wrap_gist(gist)
+
+    def _wrap_gist(self, gist):
+        file_entries = [self._gist_attrs(f)
+                        for f in gist['files'].values()]
+        return GithubGist(self, gist, file_entries)
 
     def _gist_attrs(self, f):
         return {
@@ -43,7 +46,8 @@ class GithubSession:
     def create_gist(self, desc, files, public):
         data = self._form_data(desc, files, public)
         resp = self._session.post(self.GIST_URL, data=data)
-        return resp.status_code == 201
+        resp.raise_for_status()  # resp.status_code == 201
+        return self._wrap_gist(resp.json())
 
     def get_content(self, gist_file):
         assert isinstance(gist_file, GistFile), gist_file

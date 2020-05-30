@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Gist represents a Github gist.
+GithubGist represents a Github gist.
 """
 
 from datetime import datetime
