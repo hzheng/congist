@@ -12,6 +12,15 @@ from congist.github.GithubGist import GithubGist
 from congist.GistFile import GistFile
 
 
+def _gist_attrs(f):
+    return {
+        'name': f['filename'],
+        'url': f['raw_url'],
+        'size': f['size'],
+        'type': f['type'],
+    }
+
+
 class GithubSession:
     def __init__(self, gist_user, base_url):
         username = self._username = gist_user.username
@@ -31,17 +40,9 @@ class GithubSession:
             yield self._wrap_gist(gist)
 
     def _wrap_gist(self, gist):
-        file_entries = [self._gist_attrs(f)
+        file_entries = [_gist_attrs(f)
                         for f in gist['files'].values()]
         return GithubGist(self, gist, file_entries)
-
-    def _gist_attrs(self, f):
-        return {
-            'name': f['filename'],
-            'url': f['raw_url'],
-            'size': f['size'],
-            'type': f['type'],
-        }
 
     def create_gist(self, desc, files, public):
         data = self._form_data(desc, files, public)

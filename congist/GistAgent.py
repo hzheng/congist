@@ -5,7 +5,7 @@ GistAgent represents a generic gist agent.
 """
 
 
-class GistAgent():
+class GistAgent:
 
     @property
     def host(self): ...

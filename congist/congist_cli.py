@@ -29,6 +29,7 @@ def _confirm(gist, action, is_file=False):
     print("skip", action)
     return False
 
+
 # ============Command Argument Parse============
 parser = ArgumentParser(description='Construct your gists')
 subparsers = parser.add_subparsers(dest='subcommand')
@@ -44,6 +45,7 @@ def subcommand(*args):
         for arg in args:
             arg_parser.add_argument(*arg[0], **arg[1])
         arg_parser.set_defaults(function=f)
+
     return decorator
 
 
@@ -55,6 +57,7 @@ def str2bool(val):
     if val.upper() in ('F', 'N', '0'):
         return False
     raise ArgumentTypeError('Boolean value(T/F, Y/N, 1/0) expected')
+
 
 sys_flags = (
     argument('-v', '--verbose', action='store_true',
@@ -299,6 +302,7 @@ def main():
                     config[key] = value
 
             args.function(Congist(config), args)
+
 
 if __name__ == '__main__':
     exit_code = 1

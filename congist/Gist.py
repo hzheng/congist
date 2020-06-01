@@ -19,7 +19,6 @@ class Gist:
     SUBTITLE = 'subtitle'
     DESC_SPLIT = 'desc_split'
     DESC_JOIN = 'desc_join'
-    DESC_JOIN = 'desc_join'
     ATTRS = [
         'api_url',
         'description',

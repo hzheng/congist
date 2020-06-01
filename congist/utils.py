@@ -137,7 +137,7 @@ class File:
 
 
 class Time:
-    FORMAT_PATTERN = re.compile(r'^(\d+)(y|M|d|h|m|s)?([+-])?$')
+    FORMAT_PATTERN = re.compile(r'^(\d+)([yMdhms])?([+-])?$')
     UNIT_MAP = {
         'y': 'years',
         'M': 'months',
@@ -172,7 +172,15 @@ class Time:
             return src_time < target_time
 
         diff = abs(src_time - target_time)
-        return diff < timedelta(**{time_key: 1})
+        if unit == 'y' or unit == 'M':
+            return diff < timedelta(**{'days': 1})
+        if unit == 'd':
+            return diff < timedelta(**{'hours': 12})
+        if unit == 'h':
+            return diff < timedelta(**{'minutes': 30})
+        if unit == 'm':
+            return diff < timedelta(**{'seconds': 30})
+        return diff < timedelta(**{'seconds': 1})
 
 
 class Type:
